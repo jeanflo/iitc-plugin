@@ -4,7 +4,7 @@
 // @category       Layer
 // @version        0.0.5.20170717.21732
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
-// @updateURL      https://xgress.com/files/playerTracker.meta.js
+// @updateURL      https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-player-tracker-modified
 // @downloadURL    https://xgress.com/files/playerTracker.user.js
 // @description    [iitc-2017-01-08-021732] Draw trails for the path a user took onto the map based on status messages in COMMs. Uses up to three hours of data. Does not request chat data on its own, even if that would be useful.
 // @include        https://*.ingress.com/*
