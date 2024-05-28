@@ -3,8 +3,8 @@
 // @name        PortalFinder: Crowd Sourced Portal Finder for PortalMapBot
 // @version     1.0.14
 // @namespace   https://011842.xyz
-// @updateURL   https://011842.xyz/portalfinder.meta.js
-// @downloadURL https://011842.xyz/portalfinder.user.js
+// @updateURL   https://github.com/jeanflo/iitc-plugin/blob/main/Ingressportalbot.meta.js
+// @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/Ingressportalbot.user.js
 // @description PortalMapBots Crowd Sourced Portal Finder for Intel, Mission Author and OPR. Also adds a handy Copy Telegram Link button
 // @match       *://*.ingress.com/intel*
 // @match       *://*.ingress.com/mission/*
