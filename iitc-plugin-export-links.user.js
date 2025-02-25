@@ -1,5 +1,5 @@
 // ==UserScript==
-// @id         iitc-plugin-export-links@example
+// @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
 // @version    0.1.0
