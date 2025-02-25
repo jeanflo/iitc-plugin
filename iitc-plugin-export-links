@@ -3,9 +3,9 @@
 // @name       IITC plugin: Export Portal Links
 // @category   Info
 // @version    0.1.0
-// @namespace  https://github.com/jeanflo/iitc-plugin/iitc-plugin-export-links
-// @updateURL  https://github.com/jeanflo/iitc-plugin-export-links/raw/master/export-links.user.js
-// @downloadURL https://github.com/yourujeanflosername/iitc-plugin-export-links/raw/master/export-links.user.js
+// @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
+// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
+// @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @description Export the list of links from a selected portal.
 // @include     https://*.ingress.com*
 // @include     http://*.ingress.co/*
