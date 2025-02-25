@@ -8,9 +8,9 @@
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @description Export the list of links from a selected portal.
 // @include     https://*.ingress.com*
-// @include     http://*.ingress.co/*
-// @match       https://*.ingress.co/*
-// @match       http://*.ingress.co/*
+// @include     http://*.ingress.com/*
+// @match       https://*.ingress.com/*
+// @match       http://*.ingress.com/*
 // @grant       none
 // ==/UserScript==
 
