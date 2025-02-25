@@ -4,7 +4,7 @@
 // @category   Info
 // @version    1
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
-// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
+// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @description Export the list of links from a selected portal.
 // @include        https://intel.ingress.com/
