@@ -2,9 +2,9 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    1
+// @version    0.1.5
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
-// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
+// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @description Export the list of links from a selected portal.
 // @include        https://intel.ingress.com/
@@ -23,84 +23,15 @@ function wrapper(plugin_info) {
     plugin_info.dateTimeVersion = '20231001000000';
     plugin_info.pluginId = 'exportLinks';
 
-    var self = window.plugin.exportLinks;
-    self.id = 'exportLinks';
-    self.title = 'Export Portal Links';
-    self.version = '0.1.0';
-    self.author = 'Your Name';
-    self.dialogobject = null;
-
     function setup() {
-        console.log('Setting up Export Links plugin');
-        window.addHook('portalDetailsUpdated', self.addToSidebar);
+        window.addHook('portalDetailsUpdated', window.plugin.exportLinks.addToSidebar);
     }
 
-    self.addToSidebar = function() {
-        // Add the button to the portal details sidebar
-        $('.linkdetails').append('<aside><a id="export-links" href="#">Export Links</a></aside>');
-
-        // Add click event to the button
-        $('#export-links').on('click', function(event) {
-            event.preventDefault();
-            self.forceLoadLinkedPortals();
-            self.menu();
-        });
+    window.plugin.exportLinks.addToSidebar = function() {
+        $('.linkdetails').append('<aside><a id="export-links" onclick="window.plugin.exportLinks.exportLinks();return false;">Export Links</a></aside>');
     };
 
-    self.forceLoadLinkedPortals = function() {
-        const selectedPortalGuid = window.selectedPortal;
-        if (!selectedPortalGuid) {
-            console.log('No portal selected');
-            alert('Please select a portal first.');
-            return;
-        }
-
-        console.log('Forcing load of linked portals for:', selectedPortalGuid);
-
-        const portalLinks = getPortalLinks(selectedPortalGuid);
-        if (!portalLinks || (portalLinks.in.length + portalLinks.out.length) === 0) {
-            console.log('No links found for the selected portal');
-            return;
-        }
-
-        const linkedGuids = [...portalLinks.in, ...portalLinks.out];
-        linkedGuids.forEach(guid => {
-            if (!window.portals[guid]) {
-                window.portalDetail.request(guid);
-            }
-        });
-    };
-
-    self.menu = function() {
-        var html = '<div class="' + self.id + 'menu">' +
-            '<div class="' + self.id + 'menubuttons">' +
-            '<button id="copyPortals">Copy to Clipboard</button>' +
-            '<button id="downloadPortals">Download as TXT</button>' +
-            '<button id="closeModal">Close</button>' +
-            '</div>' +
-            '<h2>Selected Portal</h2>' +
-            '<textarea id="selectedPortalText" rows="5" style="width:100%;box-sizing:border-box;"></textarea>' +
-            '<h2>Linked Portals</h2>' +
-            '<textarea id="linkedPortalsText" rows="10" style="width:100%;box-sizing:border-box;"></textarea>' +
-            '</div>';
-
-        if (window.useAndroidPanes()) {
-            self.closedialog(); // close, if any
-            $('#' + self.id + 'menu').remove();
-            $('<div id="' + self.id + 'menu" class="mobile">').append(html).appendTo(document.body);
-        } else {
-            self.dialogobject = window.dialog({
-                html: $('<div id="' + self.id + 'menu">').append(html),
-                id: 'plugin-' + self.id + '-dialog',
-                title: self.title,
-                width: 500
-            });
-        }
-
-        self.exportLinks();
-    };
-
-    self.exportLinks = function() {
+    window.plugin.exportLinks.exportLinks = function() {
         console.log('Export Links button clicked');
 
         const selectedPortalGuid = window.selectedPortal;
@@ -123,38 +54,13 @@ function wrapper(plugin_info) {
             return;
         }
 
-        // Get selected portal details
-        const selectedPortal = window.portals[selectedPortalGuid].options.data;
-        const selectedResonators = selectedPortal.resonators || [];
-        const selectedMods = selectedPortal.mods || [];
-
-        const selectedResonatorInfo = selectedResonators.map(res => `${res.owner}: L${res.level}`).join(', ');
-        const selectedModInfo = selectedMods.map(mod => `${mod.owner}: ${mod.name}`).join(', ');
-
-        const selectedPortalContent = `Title: ${selectedPortal.title}\nGUID: ${selectedPortalGuid}\nResonators: ${selectedResonatorInfo}\nMods: ${selectedModInfo}`;
-        $('#selectedPortalText').val(selectedPortalContent);
-
         function processLink(linkGuid, direction) {
             const link = window.links[linkGuid].options.data;
             const guid = link[direction + 'Guid'];
             const portal = portals[guid] ? portals[guid].options.data : portalDetail.get(guid);
 
             if (portal) {
-                const resonators = portal.resonators || [];
-                const mods = portal.mods || [];
-
-                if (resonators.length === 0) {
-                    console.warn(`No resonators found for portal: ${portal.title} (GUID: ${guid})`);
-                }
-
-                if (mods.length === 0) {
-                    console.warn(`No mods found for portal: ${portal.title} (GUID: ${guid})`);
-                }
-
-                const resonatorInfo = resonators.map(res => `${res.owner}: L${res.level}`).join(', ');
-                const modInfo = mods.map(mod => `${mod.owner}: ${mod.name}`).join(', ');
-
-                linkedPortals.push(`${portal.title} (GUID: ${guid})\nResonators: ${resonatorInfo}\nMods: ${modInfo}`);
+                linkedPortals.push(`${portal.title} (GUID: ${guid})`);
             } else {
                 console.log('Portal not found:', guid);
             }
@@ -169,8 +75,52 @@ function wrapper(plugin_info) {
             return;
         }
 
-        const portalListContent = linkedPortals.join('\n\n');
-        $('#linkedPortalsText').val(portalListContent);
+        // Get the selected portal's title
+        const selectedPortalTitle = window.portals[selectedPortalGuid].options.data.title;
+
+        // Add the selected portal info to the content
+        const portalListContent = `Selected Portal: ${selectedPortalTitle} (GUID: ${selectedPortalGuid})\n\n${linkedPortals.join('\n')}`;
+
+        // Get the current date and time
+        const now = new Date();
+        const formattedDate = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // Check if the user is on a mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            // Mobile behavior
+            const mobileModalHtml = `
+                <div id="linkedPortalsModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;padding:20px;box-sizing:border-box;z-index:1000;overflow-y:auto;">
+                    <h2 style="font-size:1.5em;margin-top:0;">Linked Portals</h2>
+                    <p><strong>Selected Portal:</strong> ${selectedPortalTitle} (GUID: ${selectedPortalGuid})</p>
+                    <textarea id="linkedPortalsText" rows="10" style="width:100%;box-sizing:border-box;">${portalListContent}</textarea><br>
+                    <button id="copyPortals" style="display:block;width:100%;padding:10px;margin-top:10px;font-size:1em;">Copy to Clipboard</button>
+                    <button id="downloadPortals" style="display:block;width:100%;padding:10px;margin-top:10px;font-size:1em;">Download as TXT</button>
+                    <button id="closeModal" style="display:block;width:100%;padding:10px;margin-top:10px;font-size:1em;">Close</button>
+                </div>
+            `;
+
+            $('body').append(mobileModalHtml);
+            $('#linkedPortalsModal').show();
+        } else {
+            // Desktop behavior
+            const modalHtml = `
+                <div id="linkedPortalsModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);background:white;padding:20px;border:1px solid #ccc;z-index:1000;width:50%;max-width:600px;box-sizing:border-box;">
+                    <h2 style="font-size:1.5em;margin-top:0;">Linked Portals</h2>
+                    <p><strong>Selected Portal:</strong> ${selectedPortalTitle} (GUID: ${selectedPortalGuid})</p>
+                    <textarea id="linkedPortalsText" rows="10" style="width:100%;box-sizing:border-box;">${portalListContent}</textarea><br>
+                    <button id="copyPortals" style="display:block;width:100%;padding:10px;margin-top:10px;font-size:1em;">Copy to Clipboard</button>
+                    <button id="downloadPortals" style="display:block;width:100%;padding:10px;margin-top:10px;font-size:1em;">Download as TXT</button>
+                    <button id="closeModal" style="display:block;width:100%;padding:10px;margin-top:10px;font-size:1em;">Close</button>
+                </div>
+                <div id="modalOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;display:none;"></div>
+            `;
+
+            $('body').append(modalHtml);
+            $('#linkedPortalsModal').show();
+            $('#modalOverlay').show();
+        }
 
         $('#copyPortals').on('click', function() {
             const textArea = document.getElementById('linkedPortalsText');
@@ -180,34 +130,21 @@ function wrapper(plugin_info) {
         });
 
         $('#downloadPortals').on('click', function() {
-            const blob = new Blob([selectedPortalContent + '\n\n' + portalListContent], { type: 'text/plain' });
+            const blob = new Blob([portalListContent], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${selectedPortal.title.replace(/[^a-z0-9]+/i, '_')}_links.txt`;
+            a.download = `${selectedPortalTitle.replace(/[^a-z0-9]+/i, '_')}_${formattedDate}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         });
 
         $('#closeModal').on('click', function() {
-            self.closedialog();
+            $('#linkedPortalsModal').remove();
+            $('#modalOverlay').remove();
         });
     };
-
-    self.closedialog = function() {
-        if (self.dialogobject) {
-            self.dialogobject.dialog('close');
-            self.dialogobject = null;
-        }
-        $('#' + self.id + 'menu').remove();
-    };
-
-    // Wait for the DOM to be fully loaded before setting up the plugin
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM fully loaded and parsed');
-        setup();
-    });
 
     setup.info = plugin_info;
 
