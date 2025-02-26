@@ -7,9 +7,9 @@
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @description Export the list of links from a selected portal.
-// @include        https://intel.ingress.com/
+// @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
-// @match          https://intel.ingress.com/
+// @match          https://*.ingress.com/*
 // @match          http://*.ingress.com/*
 // @grant       none
 // ==/UserScript==
