@@ -1,11 +1,11 @@
 // ==UserScript==
-// @id         iitc-plugin-export-links-beta
-// @name       IITC plugin: Export Portal Links beta
+// @id         iitc-plugin-export-links
+// @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.1.8
-// @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links-beta
-// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.meta.js
-// @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.user.js
+// @version    0.1.6
+// @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
+// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
+// @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
 // @description Export the list of links from a selected portal, including linked portals, mods, and resonators.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
@@ -17,6 +17,7 @@
 function setup() {
     window.plugin.exportPortalLinks = {};
 
+    // Ajout du bouton dans les détails du portail
     function addExportButton() {
         if (!window.selectedPortal) return;
         
@@ -30,6 +31,7 @@ function setup() {
         details.appendChild(button);
     }
 
+    // Fonction pour récupérer les données du portail sélectionné
     function getPortalData() {
         if (!window.selectedPortal || !window.portals[window.selectedPortal]) return null;
 
@@ -39,6 +41,7 @@ function setup() {
         const portalGuid = window.selectedPortal;
         const linksData = [];
 
+        // Chargement des portails liés
         for (const link of Object.values(window.links)) {
             if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
                 const linkedGuid = link.options.data.oGuid === portalGuid ? link.options.data.dGuid : link.options.data.oGuid;
@@ -48,12 +51,14 @@ function setup() {
             }
         }
 
+        // Récupération des mods
         const mods = portalData.mods.map(mod => ({
             name: mod?.name || "Unknown Mod",
             owner: mod?.owner || "Unknown",
             rarity: mod?.rarity || "Unknown"
         }));
 
+        // Récupération des résonateurs
         const resonators = portalData.resonators.map(res => ({
             level: res?.level || "?",
             owner: res?.owner || "Unknown"
@@ -62,12 +67,14 @@ function setup() {
         return { portalName, portalGuid, linksData, mods, resonators };
     }
 
+    // Fonction d'exportation
     function exportPortalData() {
         const data = getPortalData();
         if (!data) return alert("No portal selected or data unavailable.");
 
         const { portalName, portalGuid, linksData, mods, resonators } = data;
 
+        // Génération du contenu pour le clipboard et les fichiers
         let textContent = `**${portalName}** (${portalGuid})\n\n`;
         textContent += `Mods:\n`;
         mods.length ? mods.forEach(mod => {
@@ -89,6 +96,7 @@ function setup() {
         saveFile(generateCSV(data), portalName, "csv");
     }
 
+    // Fonction de copie dans le presse-papier avec message temporaire
     function copyToClipboard(content) {
         navigator.clipboard.writeText(content).then(() => {
             const message = document.createElement("div");
@@ -107,39 +115,33 @@ function setup() {
         });
     }
 
+    // Génération du CSV
     function generateCSV({ portalName, portalGuid, linksData, mods, resonators }) {
-        let csvContent = "\uFEFF"; // BOM UTF-8 pour compatibilitÃ© Excel
-        const separator = ";"; // SÃ©parateur Excel FR
+        let csvContent = `"Selected Portal","Portal GUID"\n"${portalName}","${portalGuid}"\n\n`;
 
-        csvContent += `"CatÃ©gorie"${separator}"Nom"${separator}"GUID"${separator}"Infos supplÃ©mentaires"\n`;
-
-        csvContent += `"Portail sÃ©lectionnÃ©"${separator}"${portalName}"${separator}"${portalGuid}"${separator}""\n`;
-
-        csvContent += `"Mods"${separator}""${separator}""${separator}""\n`;
-        csvContent += `""${separator}"Nom du Mod"${separator}"PropriÃ©taire"${separator}"RaretÃ©"\n`;
+        csvContent += `"Mods"\n"Mod Name","Owner","Rarity"\n`;
         mods.length ? mods.forEach(mod => {
-            csvContent += `""${separator}"${mod.name}"${separator}"${mod.owner}"${separator}"${mod.rarity}"\n`;
-        }) : csvContent += `""${separator}"Aucun"${separator}""${separator}""\n`;
+            csvContent += `"${mod.name}","${mod.owner}","${mod.rarity}"\n`;
+        }) : csvContent += `"None",,\n`;
 
-        csvContent += `"RÃ©sonateurs"${separator}""${separator}""${separator}""\n`;
-        csvContent += `""${separator}"Niveau"${separator}"PropriÃ©taire"${separator}""\n`;
+        csvContent += `\n"Resonators"\n"Level","Owner"\n`;
         resonators.length ? resonators.forEach(res => {
-            csvContent += `""${separator}"Niveau ${res.level}"${separator}"${res.owner}"${separator}""\n`;
-        }) : csvContent += `""${separator}"Aucun"${separator}""${separator}""\n`;
+            csvContent += `"Level ${res.level}","${res.owner}"\n`;
+        }) : csvContent += `"None",\n`;
 
-        csvContent += `"Portails liÃ©s"${separator}""${separator}""${separator}""\n`;
-        csvContent += `""${separator}"Nom du portail"${separator}"GUID"${separator}""\n`;
+        csvContent += `\n"Linked Portals"\n"Portal Name","Portal GUID"\n`;
         linksData.length ? linksData.forEach(link => {
-            csvContent += `""${separator}"${link.name}"${separator}"${link.guid}"${separator}""\n`;
-        }) : csvContent += `""${separator}"Aucun"${separator}""${separator}""\n`;
+            csvContent += `"${link.name}","${link.guid}"\n`;
+        }) : csvContent += `"None",\n`;
 
         return csvContent;
     }
 
+    // Fonction de sauvegarde améliorée
     function saveFile(content, portalName, format) {
         const now = new Date();
         const filename = `${portalName} - ${now.toLocaleDateString().replace(/\//g, "-")} - ${now.toLocaleTimeString().replace(/:/g, "-")}.${format}`;
-        const blob = new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8;" : "text/plain;charset=utf-8;" });
+        const blob = new Blob([content], { type: format === "csv" ? "text/csv" : "text/plain" });
 
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -152,6 +154,7 @@ function setup() {
     window.addHook("portalSelected", addExportButton);
 }
 
-setup.info = { script: { version: "0.1.8" } };
+// Chargement du plugin
+setup.info = { script: { version: "0.1.6" } };
 if (window.iitcLoaded) setup();
 else window.addHook("iitcLoaded", setup);
