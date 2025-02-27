@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links-beta
 // @name       IITC plugin: Export Portal Links beta
 // @category   Info
-// @version    0.2.1
+// @version    0.2.0
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links-beta
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.user.js
@@ -41,22 +41,23 @@ function wrapper() {
 
     // Affiche la boîte de dialogue d'export et force le chargement des portails liés
     window.plugin.exportPortalLinks.showExportDialog = function(portalName, portalGuid) {
-    let linksData = [];
-    let links = window.links;
-    Object.values(links).forEach(link => {
-        if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
-            let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
-            let linkedPortalName = window.portals[linkedPortalGuid]?.options.data.title || "Unknown Portal";
-            linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
-            // Charger les détails sans changer le portail sélectionné
-            if (!window.portals[linkedPortalGuid]?.options.data.mods) {
-                window.requestPortalDetails(linkedPortalGuid);
+        let linksData = [];
+        let links = window.links;
+        Object.values(links).forEach(link => {
+            if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
+                let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
+                let linkedPortalName = window.portals[linkedPortalGuid]?.options.data.title || "Unknown Portal";
+                linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
+                // Forcer le chargement des détails du portail lié si non présent
+                if (!window.portals[linkedPortalGuid] || !window.portals[linkedPortalGuid].options.data.mods) {
+                    if (typeof window.requestPortalDetails === "function") {
+                        window.requestPortalDetails(linkedPortalGuid);
+                    } else if (typeof window.renderPortalDetails === "function") {
+                        window.renderPortalDetails(linkedPortalGuid);
+                    }
+                }
             }
-        }
-    });
-
-    // ... (reste du code inchangé)
-};
+        });
         let selectedPortalData = window.portals[portalGuid] ? window.portals[portalGuid].options.data : null;
         let mods = (selectedPortalData && selectedPortalData.mods) ? selectedPortalData.mods : [];
         let resonators = (selectedPortalData && selectedPortalData.resonators) ? selectedPortalData.resonators : [];
