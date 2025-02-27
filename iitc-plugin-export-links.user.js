@@ -20,30 +20,20 @@ function wrapper() {
     window.plugin.exportPortalLinks = function() {};
 
     // Ajoute le bouton "Export Links" dans les détails du portail
-    window.plugin.exportPortalLinks.addExportButton = function() {
-        if (!window.portalDetail || !window.selectedPortal) return;
-
-        const portal = window.portals[window.selectedPortal];
-        if (!portal) return;
-
-        const details = portal.options.data;
-        const portalName = details.title || "Unknown Portal";
-        const portalGuid = window.selectedPortal;
-
-        const container = document.createElement("div");
-        container.className = "export-links-container";
-
-        const button = document.createElement("button");
-        button.textContent = "Export Links";
-        button.style.display = "block";
-        button.style.margin = "5px auto";
-        button.onclick = function() {
-            window.plugin.exportPortalLinks.showExportDialog(portalName, portalGuid);
-        };
-
-        container.appendChild(button);
-        document.querySelector(".linkdetails")?.appendChild(container);
-    };
+    window.plugin.exportPortalLinks.showExportDialog = function(portalName, portalGuid) {
+    let linksData = [];
+    let links = window.links;
+    Object.values(links).forEach(link => {
+        if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
+            let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
+            let linkedPortalName = window.portals[linkedPortalGuid]?.options.data.title || "Unknown Portal";
+            linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
+            // Charger les détails sans changer le portail sélectionné
+            if (!window.portals[linkedPortalGuid]?.options.data.mods) {
+                window.requestPortalDetails(linkedPortalGuid);
+            }
+        }
+    });
 
     // Affiche la boîte de dialogue d'export et force le chargement des portails liés
     window.plugin.exportPortalLinks.showExportDialog = function(portalName, portalGuid) {
