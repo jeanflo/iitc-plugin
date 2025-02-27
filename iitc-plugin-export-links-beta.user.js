@@ -19,24 +19,21 @@ function wrapper() {
 
     window.plugin.exportPortalLinks = function() {};
 
-    window.plugin.exportPortalLinks.addExportButton = function() {
-        const container = $('.linkdetails');
-        if (!container.length || !window.selectedPortal) return;
-
-        // Supprimer l'ancien bouton si existe
-        container.find('.export-links-container').remove();
-
-        const portal = window.portals[window.selectedPortal];
-        if (!portal) return;
-
-        const html = `<div class="export-links-container" style="text-align: center; margin: 5px 0;">
-            <button class="btn" onclick="window.plugin.exportPortalLinks.showExportDialog('${window.selectedPortal}')">
-                Export Links
-            </button>
-        </div>`;
-
-        container.append(html);
-    };
+    // Ajoute le bouton "Export Links" dans les détails du portail
+    window.plugin.exportPortalLinks.showExportDialog = function(portalName, portalGuid) {
+    let linksData = [];
+    let links = window.links;
+    Object.values(links).forEach(link => {
+        if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
+            let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
+            let linkedPortalName = window.portals[linkedPortalGuid]?.options.data.title || "Unknown Portal";
+            linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
+            // Charger les détails sans changer le portail sélectionné
+            if (!window.portals[linkedPortalGuid]?.options.data.mods) {
+                window.requestPortalDetails(linkedPortalGuid);
+            }
+        }
+    });
 
     window.plugin.exportPortalLinks.showExportDialog = function(portalGuid) {
         const portal = window.portals[portalGuid];
