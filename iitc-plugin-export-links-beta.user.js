@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links-beta
 // @name       IITC plugin: Export Portal Links beta
 // @category   Info
-// @version    0.2.3
+// @version    0.2.4
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links-beta
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.user.js
@@ -18,31 +18,29 @@ function wrapper() {
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.exportPortalLinks = function() {};
 
-    // Fonction pour ajouter le bouton Export Links
-    window.plugin.exportPortalLinks.addExportButton = function() {
-        const div = document.createElement("div");
-        div.style.marginTop = "10px";
+    // Fonction pour afficher la popup avec les informations du portail
+    window.plugin.exportPortalLinks.showPopup = function() {
+        const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
         
-        const button = document.createElement("button");
-        button.textContent = "Export Links";
-        button.style.width = "100%";
-        button.style.padding = "5px";
-        button.style.border = "1px solid #ccc";
-        button.style.background = "#2e3e5c";
-        button.style.color = "white";
-        button.style.cursor = "pointer";
-        
-        button.onclick = function() {
-            window.plugin.exportPortalLinks.copyToClipboard();
-        };
+        let content = `<b>Selected Portal:</b><br><b>${portalName}</b> (${portalGuid})<br><br>`;
+        content += `<b>Mods:</b><br>`;
+        content += mods.length ? mods.map(mod => `<b>${mod.name || "Unknown Mod"}</b> (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})`).join("<br>") : "None";
+        content += `<br><br><b>Resonators:</b><br>`;
+        content += resonators.length ? resonators.map(res => `<b>Level ${res.level || "?"}</b> (Owner: ${res.owner || "Unknown"})`).join("<br>") : "None";
+        content += `<br><br><b>Linked Portals:</b><br>`;
+        content += linksData.length ? linksData.map(link => `<b>${link.name}</b> (${link.guid})`).join("<br>") : "None";
 
-        div.appendChild(button);
+        const buttons = `<br><br>
+            <button onclick="window.plugin.exportPortalLinks.copyToClipboard()">📋 Copier</button>
+            <button onclick="window.plugin.exportPortalLinks.downloadFile('csv')">📄 Télécharger CSV</button>
+            <button onclick="window.plugin.exportPortalLinks.downloadFile('txt')">📜 Télécharger TXT</button>
+        `;
 
-        // Ajout du bouton dans la section des détails du portail
-        const details = document.getElementById("portaldetails");
-        if (details) {
-            details.appendChild(div);
-        }
+        dialog({
+            title: "Export Portal Links",
+            html: content + buttons,
+            width: 400
+        });
     };
 
     // Fonction pour copier les données dans le presse-papier
@@ -55,23 +53,10 @@ function wrapper() {
         text += `\n\nLinked Portals:\n`;
         text += linksData.length ? linksData.map(link => `**${link.name}** (${link.guid})`).join("\n") : "None";
 
-        navigator.clipboard.writeText(text).then(() => {
-            const message = document.createElement("div");
-            message.textContent = "Copied to clipboard!";
-            message.style.position = "fixed";
-            message.style.bottom = "10px";
-            message.style.left = "50%";
-            message.style.transform = "translateX(-50%)";
-            message.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-            message.style.color = "white";
-            message.style.padding = "10px";
-            message.style.borderRadius = "5px";
-            message.style.zIndex = "1000";
-            document.body.appendChild(message);
-            setTimeout(() => document.body.removeChild(message), 2000);
-        });
+        navigator.clipboard.writeText(text).then(() => alert("Données copiées dans le presse-papier !"));
     };
 
+    // Fonction pour télécharger les données en CSV ou TXT
     window.plugin.exportPortalLinks.downloadFile = function(format) {
         const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
         const now = new Date();
@@ -97,16 +82,33 @@ function wrapper() {
         }
 
         const blob = new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8;" : "text/plain;charset=utf-8;" });
-        if (typeof android !== "undefined" && android && android.saveFile) {
-            android.saveFile(filename, blob);
-        } else {
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    // Ajouter le bouton Export Links
+    window.plugin.exportPortalLinks.addExportButton = function() {
+        const div = document.createElement("div");
+        div.style.marginTop = "10px";
+
+        const button = document.createElement("button");
+        button.textContent = "Export Links";
+        button.style.width = "100%";
+        button.style.padding = "5px";
+        button.style.border = "1px solid #ccc";
+        button.style.background = "#2e3e5c";
+        button.style.color = "white";
+        button.style.cursor = "pointer";
+        
+        button.onclick = window.plugin.exportPortalLinks.showPopup;
+        div.appendChild(button);
+
+        const details = document.getElementById("portaldetails");
+        if (details) details.appendChild(div);
     };
 
     let setup = function() {
