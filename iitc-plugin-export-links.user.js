@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.2.6
+// @version    0.2.8
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
@@ -29,13 +29,9 @@ function wrapper() {
         const button = document.createElement("button");
         button.id = "export-links-btn";
         button.textContent = "Export Links";
-        button.style.display = "block";
-        button.style.width = "100%";
-        button.style.margin = "5px auto";
-        button.style.padding = "5px";
-        button.style.border = "1px solid #ccc";
-        button.style.background = "#2e3e5c";
-        button.style.color = "white";
+        button.display = "inline-block";
+        button.style.background = "rgba(8, 48, 78, 0.9)";
+        button.style.color = "#ffce00";
         button.style.cursor = "pointer";
 
         button.onclick = function() {
