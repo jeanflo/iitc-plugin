@@ -18,6 +18,40 @@ function wrapper() {
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.exportPortalLinks = function() {};
 
+    window.plugin.exportPortalLinks.addExportButton = function() {
+        if (!window.selectedPortal) return;
+        const portal = window.portals[window.selectedPortal];
+        if (!portal) return;
+
+        // Vérifie si le bouton existe déjà pour éviter les doublons
+        if (document.getElementById("export-links-btn")) return;
+
+        const button = document.createElement("button");
+        button.id = "export-links-btn";
+        button.textContent = "Export Links";
+        button.style.display = "block";
+        button.style.width = "100%";
+        button.style.margin = "5px auto";
+        button.style.padding = "5px";
+        button.style.border = "1px solid #ccc";
+        button.style.background = "#2e3e5c";
+        button.style.color = "white";
+        button.style.cursor = "pointer";
+
+        button.onclick = function() {
+            const details = portal.options.data;
+            const portalName = details.title || "Unknown Portal";
+            const portalGuid = window.selectedPortal;
+            window.plugin.exportPortalLinks.showExportDialog(portalName, portalGuid);
+        };
+
+        // Ajout du bouton dans les détails du portail
+        const linkDetails = document.querySelector(".linkdetails");
+        if (linkDetails) {
+            linkDetails.appendChild(button);
+        }
+    };
+
     window.plugin.exportPortalLinks.showExportDialog = function(portalName, portalGuid) {
         let linksData = [];
         let links = window.links;
@@ -27,12 +61,6 @@ function wrapper() {
                 let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
                 let linkedPortalName = window.portals[linkedPortalGuid]?.options.data.title || "Unknown Portal";
                 linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
-
-                if (!window.portals[linkedPortalGuid] || !window.portals[linkedPortalGuid].options.data.mods) {
-                    if (typeof window.requestPortalDetails === "function" && linkedPortalGuid !== portalGuid) {
-                        window.requestPortalDetails(linkedPortalGuid);
-                    }
-                }
             }
         });
 
@@ -46,18 +74,29 @@ function wrapper() {
                 return;
             }
 
-            let content = `<h3><b>${portalName}</b> (${portalGuid})</h3><br>`;
-            content += `<h4>Mods</h4><ul>`;
-            content += mods.length ? mods.map(mod => `<li><b>${mod.name || "Unknown Mod"}</b> (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})</li>`).join('') : `<li>None</li>`;
-            content += `</ul><h4>Resonators</h4><ul>`;
-            content += resonators.length ? resonators.map(res => `<li><b>Level ${res.level || "?"}</b> (Owner: ${res.owner || "Unknown"})</li>`).join('') : `<li>None</li>`;
-            content += `</ul><h4>Linked Portals</h4><ul>`;
-            content += linksData.length ? linksData.map(link => `<li><b>${link.name}</b> (${link.guid})</li>`).join('') : `<li>None</li>`;
-            content += `</ul>`;
+            let content = document.createElement("div");
+            content.innerHTML = `
+                <h3><b>${portalName}</b> (${portalGuid})</h3>
+                <h4>Mods</h4><ul>${mods.length ? mods.map(mod => `<li><b>${mod.name || "Unknown Mod"}</b> (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})</li>`).join('') : "<li>None</li>"}</ul>
+                <h4>Resonators</h4><ul>${resonators.length ? resonators.map(res => `<li><b>Level ${res.level || "?"}</b> (Owner: ${res.owner || "Unknown"})</li>`).join('') : "<li>None</li>"}</ul>
+                <h4>Linked Portals</h4><ul>${linksData.length ? linksData.map(link => `<li><b>${link.name}</b> (${link.guid})</li>`).join('') : "<li>None</li>"}</ul>
+            `;
 
-            content += `<button id="copy-btn">📋 Copier</button>`;
-            content += `<button id="download-txt-btn">📜 Télécharger TXT</button>`;
-            content += `<button id="download-csv-btn">📄 Télécharger CSV</button>`;
+            let copyBtn = document.createElement("button");
+            copyBtn.textContent = "📋 Copier";
+            copyBtn.addEventListener("click", () => window.plugin.exportPortalLinks.copyToClipboard());
+
+            let downloadTxtBtn = document.createElement("button");
+            downloadTxtBtn.textContent = "📜 Télécharger TXT";
+            downloadTxtBtn.addEventListener("click", () => window.plugin.exportPortalLinks.downloadFile('txt'));
+
+            let downloadCsvBtn = document.createElement("button");
+            downloadCsvBtn.textContent = "📄 Télécharger CSV";
+            downloadCsvBtn.addEventListener("click", () => window.plugin.exportPortalLinks.downloadFile('csv'));
+
+            content.appendChild(copyBtn);
+            content.appendChild(downloadTxtBtn);
+            content.appendChild(downloadCsvBtn);
 
             window.dialog({
                 title: "Export Portal Links",
@@ -65,16 +104,10 @@ function wrapper() {
                 width: 400
             });
 
-            // Attacher les événements après l'injection du HTML
-            document.getElementById("copy-btn").addEventListener("click", window.plugin.exportPortalLinks.copyToClipboard);
-            document.getElementById("download-txt-btn").addEventListener("click", () => window.plugin.exportPortalLinks.downloadFile('txt'));
-            document.getElementById("download-csv-btn").addEventListener("click", () => window.plugin.exportPortalLinks.downloadFile('csv'));
-
             window.plugin.exportPortalLinks.currentData = { portalName, portalGuid, mods, resonators, linksData };
         }, 500);
     };
 
-    // Fonction pour copier dans le presse-papier
     window.plugin.exportPortalLinks.copyToClipboard = function() {
         const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
         let text = `**Selected Portal:**\n**${portalName}** (${portalGuid})\n\nMods:\n`;
@@ -87,7 +120,6 @@ function wrapper() {
         navigator.clipboard.writeText(text).then(() => alert("Données copiées dans le presse-papier !"));
     };
 
-    // Fonction pour télécharger un fichier TXT ou CSV
     window.plugin.exportPortalLinks.downloadFile = function(format) {
         const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
         const filename = `${portalName.replace(/\s+/g, '_')}.${format}`;
