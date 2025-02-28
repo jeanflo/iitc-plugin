@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links-beta
 // @name       IITC plugin: Export Portal Links beta
 // @category   Info
-// @version    0.2.5
+// @version    0.2.6
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links-beta
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.user.js
@@ -126,13 +126,38 @@ function wrapper() {
         let content = "";
 
         if (format === "csv") {
-            const bom = "\uFEFF";
+            const bom = "\uFEFF"; // UTF-8 BOM pour compatibilité Excel
             content = bom + `"Selected Portal";"Portal GUID"\n"${portalName}";"${portalGuid}"\n\n`;
+
+            // Ajout des Mods
             content += `"Mods"\n"Mod Name";"Owner";"Rarity"\n`;
             content += mods.length ? mods.map(mod => `"${mod.name}";"${mod.owner}";"${mod.rarity}"`).join("\n") : `None;;\n`;
+
+            // Ajout des Résonateurs
+            content += `\n\n"Resonators"\n"Level";"Owner"\n`;
+            content += resonators.length ? resonators.map(res => `"Level ${res.level}";"${res.owner}"`).join("\n") : `None;\n`;
+
+            // Ajout des Liens
+            content += `\n\n"Linked Portals"\n"Portal Name";"Portal GUID"\n`;
+            content += linksData.length ? linksData.map(link => `"${link.name}";"${link.guid}"`).join("\n") : `None;\n`;
+
         } else {
-            content = `Selected Portal:\n**${portalName}** (${portalGuid})\n\nMods:\n`;
+            // Format TXT
+            content = `Selected Portal:\n**${portalName}** (${portalGuid})\n\n`;
+
+            // Ajout des Mods
+            content += `Mods:\n`;
             content += mods.length ? mods.map(mod => `**${mod.name}** (Owner: ${mod.owner}, Rarity: ${mod.rarity})`).join("\n") : "None";
+            content += `\n\n`;
+
+            // Ajout des Résonateurs
+            content += `Resonators:\n`;
+            content += resonators.length ? resonators.map(res => `**Level ${res.level}** (Owner: ${res.owner})`).join("\n") : "None";
+            content += `\n\n`;
+
+            // Ajout des Liens
+            content += `Linked Portals:\n`;
+            content += linksData.length ? linksData.map(link => `**${link.name}** (${link.guid})`).join("\n") : "None";
         }
 
         const blob = new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8;" : "text/plain;charset=utf-8;" });
