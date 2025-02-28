@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links-beta
 // @name       IITC plugin: Export Portal Links beta
 // @category   Info
-// @version    0.2.2
+// @version    0.2.3
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links-beta
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links-beta.user.js
@@ -18,6 +18,34 @@ function wrapper() {
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.exportPortalLinks = function() {};
 
+    // Fonction pour ajouter le bouton Export Links
+    window.plugin.exportPortalLinks.addExportButton = function() {
+        const div = document.createElement("div");
+        div.style.marginTop = "10px";
+        
+        const button = document.createElement("button");
+        button.textContent = "Export Links";
+        button.style.width = "100%";
+        button.style.padding = "5px";
+        button.style.border = "1px solid #ccc";
+        button.style.background = "#2e3e5c";
+        button.style.color = "white";
+        button.style.cursor = "pointer";
+        
+        button.onclick = function() {
+            window.plugin.exportPortalLinks.copyToClipboard();
+        };
+
+        div.appendChild(button);
+
+        // Ajout du bouton dans la section des détails du portail
+        const details = document.getElementById("portaldetails");
+        if (details) {
+            details.appendChild(div);
+        }
+    };
+
+    // Fonction pour copier les données dans le presse-papier
     window.plugin.exportPortalLinks.copyToClipboard = function() {
         const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
         let text = `**Selected Portal:**\n**${portalName}** (${portalGuid})\n\nMods:\n`;
