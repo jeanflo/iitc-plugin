@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.4.9
+// @version    0.5.0
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
@@ -66,69 +66,77 @@ function wrapper() {
     };
 
     // Fonction pour copier dans le presse-papiers
-    window.plugin.exportPortalLinks.copyToClipboard = function() {
-        const portal = window.portals[window.selectedPortal];
-        if (!portal || !portal.options.data) {
-            alert("Les détails du portail ne sont pas encore chargés.");
-            return;
-        }
-        const details = portal.options.data;
-        let content = `**${details.title} (GUID: ${window.selectedPortal})**\n`; // Nom du portail en gras
+    // Fonction pour copier dans le presse-papiers
+window.plugin.exportPortalLinks.copyToClipboard = function() {
+    const portal = window.portals[window.selectedPortal];
+    if (!portal || !portal.options.data) {
+        alert("Les détails du portail ne sont pas encore chargés.");
+        return;
+    }
+    const details = portal.options.data;
+    let content = `**${details.title} (GUID: ${window.selectedPortal})**\n`; // Nom du portail en gras
 
-        // Vérification si 'mods' est défini et si ce n'est pas un tableau vide
-        if (details.mods && Array.isArray(details.mods) && details.mods.length > 0) {
-            content += "**Mods:**\n";
-            details.mods.forEach(mod => {
-                content += `- **${mod.name || "Unknown"}** (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})\n`; // Mods en gras
-            });
-        } else {
-            content += "Mods: None\n";
-        }
-
-        // Vérification si 'resonators' est défini et si ce n'est pas un tableau vide
-        if (details.resonators && Array.isArray(details.resonators) && details.resonators.length > 0) {
-            content += "**Resonators:**\n";
-            details.resonators.forEach(res => {
-                content += `- **Level ${res.level || "?"}** (Owner: ${res.owner || "Unknown"})\n`; // Résonateurs en gras
-            });
-        } else {
-            content += "Resonators: None\n";
-        }
-
-        // Vérification si des liens existent
-        content += "**Linked Portals:**\n";
-        let linkedPortalsFound = false;
-        Object.values(window.links).forEach(link => {
-            if (link.options.data.oGuid === window.selectedPortal || link.options.data.dGuid === window.selectedPortal) {
-                const linkedPortalGuid = (link.options.data.oGuid === window.selectedPortal) ? link.options.data.dGuid : link.options.data.oGuid;
-                const linkedPortal = window.portals[linkedPortalGuid]?.options.data;
-                if (linkedPortal) {
-                    content += `- **${linkedPortal.title || "Unknown Portal"}** (GUID: ${linkedPortalGuid})\n`; // Portails liés en gras
-                    linkedPortalsFound = true;
-                }
-            }
+    // Vérification si 'mods' est défini et si ce n'est pas un tableau vide
+    if (details.mods && Array.isArray(details.mods) && details.mods.length > 0) {
+        content += "**Mods:**\n";
+        details.mods.forEach(mod => {
+            content += `- **${mod.name || "Unknown"}** (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})\n`; // Mods en gras
         });
-        if (!linkedPortalsFound) content += "Linked Portals: None\n";
+    } else {
+        content += "Mods: None\n";
+    }
 
-        // Créer un élément temporaire pour afficher le texte
+    // Vérification si 'resonators' est défini et si ce n'est pas un tableau vide
+    if (details.resonators && Array.isArray(details.resonators) && details.resonators.length > 0) {
+        content += "**Resonators:**\n";
+        details.resonators.forEach(res => {
+            content += `- **Level ${res.level || "?"}** (Owner: ${res.owner || "Unknown"})\n`; // Résonateurs en gras
+        });
+    } else {
+        content += "Resonators: None\n";
+    }
+
+    // Vérification si des liens existent
+    content += "**Linked Portals:**\n";
+    let linkedPortalsFound = false;
+    Object.values(window.links).forEach(link => {
+        if (link.options.data.oGuid === window.selectedPortal || link.options.data.dGuid === window.selectedPortal) {
+            const linkedPortalGuid = (link.options.data.oGuid === window.selectedPortal) ? link.options.data.dGuid : link.options.data.oGuid;
+            const linkedPortal = window.portals[linkedPortalGuid]?.options.data;
+            if (linkedPortal) {
+                content += `- **${linkedPortal.title || "Unknown Portal"}** (GUID: ${linkedPortalGuid})\n`; // Portails liés en gras
+                linkedPortalsFound = true;
+            }
+        }
+    });
+    if (!linkedPortalsFound) content += "Linked Portals: None\n";
+
+    // Copier le texte dans le presse-papiers
+    navigator.clipboard.writeText(content).then(() => {
+        // Affichage d'un message temporaire
         const tempDiv = document.createElement('div');
-        tempDiv.textContent = "Copy to Clipboard";
+        tempDiv.textContent = "Texte copié dans le presse-papiers !";
         tempDiv.style.position = 'fixed';
         tempDiv.style.top = '50%';
         tempDiv.style.left = '50%';
         tempDiv.style.transform = 'translate(-50%, -50%)';
-        tempDiv.style.padding = '20px';
-        tempDiv.style.background = 'white';
-        tempDiv.style.border = '1px solid black';
+        tempDiv.style.padding = '10px';
+        tempDiv.style.background = 'rgba(0,0,0,0.7)';
+        tempDiv.style.color = 'white';
+        tempDiv.style.borderRadius = '5px';
         tempDiv.style.zIndex = '9999';
 
         document.body.appendChild(tempDiv);
 
-        // Supprimer après 3 secondes
+        // Supprimer le message après 2 secondes
         setTimeout(() => {
             document.body.removeChild(tempDiv);
-        }, 3000);
-    };
+        }, 2000);
+    }).catch(err => {
+        console.error("Erreur lors de la copie : ", err);
+        alert("Impossible de copier dans le presse-papiers.");
+    });
+};
 
     // Fonction pour ajouter le bouton Export Links dans l'interface
     window.plugin.exportPortalLinks.addToSidebar = function() {
