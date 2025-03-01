@@ -1,4 +1,3 @@
-
 // ==UserScript==
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
