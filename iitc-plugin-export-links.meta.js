@@ -2,9 +2,9 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.4.8
+// @version    0.4.9
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
-// @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links.meta.js
+// @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links.user.js
 // @description Export links, mods, and resonators from a selected portal (including mod rarity).
 // @include        https://*.ingress.com/*
