@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.4.0
+// @version    0.4.1
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
@@ -160,7 +160,7 @@ function wrapper() {
         const now = new Date();
 
         if (type === 'csv') {
-            // Création du fichier CSV avec encodage UTF-8
+            // Création du fichier CSV avec encodage UTF-8 et BOM
             let content = `"Portal Name";"GUID";"Date";"Type";"Name";"Owner";"Rarity/Level";"Linked Portal Name";"Linked Portal GUID"\n`; // Entête du CSV
 
             // Ajouter la ligne pour chaque mod
@@ -188,8 +188,12 @@ function wrapper() {
                 }
             });
 
+            // Ajout du BOM pour l'encodage UTF-8
+            const BOM = '\uFEFF';
+            const fullContent = BOM + content;
+
             // Créer et télécharger un fichier CSV avec encodage UTF-8
-            const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+            const blob = new Blob([fullContent], { type: 'text/csv;charset=utf-8' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `${details.title || "Unknown Portal"}_details.csv`;
@@ -220,18 +224,15 @@ function wrapper() {
             }
 
             content += "**Linked Portals:**\n";
-            let linkedPortalsFound = false;
             Object.values(window.links).forEach(link => {
                 if (link.options.data.oGuid === window.selectedPortal || link.options.data.dGuid === window.selectedPortal) {
                     const linkedPortalGuid = (link.options.data.oGuid === window.selectedPortal) ? link.options.data.dGuid : link.options.data.oGuid;
                     const linkedPortal = window.portals[linkedPortalGuid]?.options.data;
                     if (linkedPortal) {
                         content += `- **${linkedPortal.title || "Unknown Portal"}** (GUID: ${linkedPortalGuid})\n`;
-                        linkedPortalsFound = true;
                     }
                 }
             });
-            if (!linkedPortalsFound) content += "Linked Portals: None\n";
 
             // Créer et télécharger un fichier TXT
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -241,8 +242,8 @@ function wrapper() {
             link.click();
         }
     };
-}
 
-var script = document.createElement("script");
-script.appendChild(document.createTextNode("(" + wrapper + ")();"));
-(document.body || document.head || document.documentElement).appendChild(script);
+    // Ajouter le bouton export
+    window.plugin.exportPortalLinks.addToSidebar();
+}
+wrapper();
