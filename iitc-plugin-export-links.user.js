@@ -2,11 +2,11 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.2.6
+// @version    0.4.0
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
-// @description Export links, mods and resonators from a selected portal (including mod rarity).
+// @description Export links, mods, and resonators from a selected portal (including mod rarity).
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -18,158 +18,229 @@ function wrapper() {
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.exportPortalLinks = function() {};
 
-    window.plugin.exportPortalLinks.addExportButton = function() {
+    // Fonction pour afficher la boîte de dialogue avec les informations du portail
+    window.plugin.exportPortalLinks.showExportDialog = function() {
         if (!window.selectedPortal) return;
         const portal = window.portals[window.selectedPortal];
-        if (!portal) return;
-
-        // Vérifie si le bouton existe déjà pour éviter les doublons
-        if (document.getElementById("export-links-btn")) return;
-
-        const button = document.createElement("button");
-        button.id = "export-links-btn";
-        button.textContent = "Export Links";
-        button.style.display = "block";
-        button.style.width = "100%";
-        button.style.margin = "5px auto";
-        button.style.padding = "5px";
-        button.style.border = "1px solid #ccc";
-        button.style.background = "#2e3e5c";
-        button.style.color = "white";
-        button.style.cursor = "pointer";
-
-        button.onclick = function() {
-            const details = portal.options.data;
-            const portalName = details.title || "Unknown Portal";
-            const portalGuid = window.selectedPortal;
-            window.plugin.exportPortalLinks.showExportDialog(portalName, portalGuid);
-        };
-
-        // Ajout du bouton dans les détails du portail
-        const linkDetails = document.querySelector(".linkdetails");
-        if (linkDetails) {
-            linkDetails.appendChild(button);
+        if (!portal || !portal.options.data) {
+            alert("Les détails du portail ne sont pas encore chargés. Réessayez dans quelques secondes.");
+            return;
         }
-    };
-
-    window.plugin.exportPortalLinks.showExportDialog = function(portalName, portalGuid) {
+        const details = portal.options.data;
+        const portalName = details.title || "Unknown Portal";
+        const portalGuid = window.selectedPortal;
+        const now = new Date();
+        let mods = details.mods || [];
+        let resonators = details.resonators || [];
         let linksData = [];
-        let links = window.links;
 
-        Object.values(links).forEach(link => {
+        Object.values(window.links).forEach(link => {
             if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
                 let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
-                let linkedPortalName = window.portals[linkedPortalGuid]?.options.data.title || "Unknown Portal";
+                let linkedPortalName = window.portals[linkedPortalGuid]?.options.data?.title || "Unknown Portal";
                 linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
             }
         });
 
-        setTimeout(() => {
-            let selectedPortalData = window.portals[portalGuid] ? window.portals[portalGuid].options.data : null;
-            let mods = selectedPortalData?.mods || [];
-            let resonators = selectedPortalData?.resonators || [];
+        let content = `<h3><u><b>${now.toLocaleString()}</b></u></h3>`; // Date et heure en gras et souligné
+        content += `<h3><b>${portalName}</b></h3>`; // Nom du portail en gras
+        content += `<p><b>GUID:</b> ${portalGuid}</p>`;
+        content += `<h4><b>Mods</b></h4><ul>`;
+        content += mods.length ? mods.map(mod => `<li><b>${mod.name || "Unknown Mod"}</b> (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})</li>`).join('') : "<li>None</li>";
+        content += `</ul><h4><b>Resonators</b></h4><ul>`;
+        content += resonators.length ? resonators.map(res => `<li><b>Level ${res.level || "?"}</b> (Owner: ${res.owner || "Unknown"})</li>`).join('') : "<li>None</li>";
+        content += `</ul><h4><b>Linked Portals</b></h4><ul>`;
+        content += linksData.length ? linksData.map(link => `<li><b>${link.name}</b> (${link.guid})</li>`).join('') : "<li>None</li>";
+        content += `</ul>`;
 
-            if (!selectedPortalData || (!mods.length && !resonators.length)) {
-                alert("Les détails du portail ne sont pas encore chargés. Réessayez dans quelques secondes.");
-                return;
-            }
+        content += `<button onclick="window.plugin.exportPortalLinks.copyToClipboard()">📋 Copier</button>`;
+        content += `<button onclick="window.plugin.exportPortalLinks.downloadFile('txt')">📜 Télécharger TXT</button>`;
+        content += `<button onclick="window.plugin.exportPortalLinks.downloadFile('csv')">📄 Télécharger CSV</button>`;
 
-            let content = document.createElement("div");
-            content.innerHTML = `
-                <h3><b>${portalName}</b> (${portalGuid})</h3>
-                <h4>Mods</h4><ul>${mods.length ? mods.map(mod => `<li><b>${mod.name || "Unknown Mod"}</b> (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})</li>`).join('') : "<li>None</li>"}</ul>
-                <h4>Resonators</h4><ul>${resonators.length ? resonators.map(res => `<li><b>Level ${res.level || "?"}</b> (Owner: ${res.owner || "Unknown"})</li>`).join('') : "<li>None</li>"}</ul>
-                <h4>Linked Portals</h4><ul>${linksData.length ? linksData.map(link => `<li><b>${link.name}</b> (${link.guid})</li>`).join('') : "<li>None</li>"}</ul>
-            `;
-
-            let copyBtn = document.createElement("button");
-            copyBtn.textContent = "📋 Copier";
-            copyBtn.addEventListener("click", () => window.plugin.exportPortalLinks.copyToClipboard());
-
-            let downloadTxtBtn = document.createElement("button");
-            downloadTxtBtn.textContent = "📜 Télécharger TXT";
-            downloadTxtBtn.addEventListener("click", () => window.plugin.exportPortalLinks.downloadFile('txt'));
-
-            let downloadCsvBtn = document.createElement("button");
-            downloadCsvBtn.textContent = "📄 Télécharger CSV";
-            downloadCsvBtn.addEventListener("click", () => window.plugin.exportPortalLinks.downloadFile('csv'));
-
-            content.appendChild(copyBtn);
-            content.appendChild(downloadTxtBtn);
-            content.appendChild(downloadCsvBtn);
-
-            window.dialog({
-                title: "Export Portal Links",
-                html: content,
-                width: 400
-            });
-
-            window.plugin.exportPortalLinks.currentData = { portalName, portalGuid, mods, resonators, linksData };
-        }, 500);
+        window.dialog({
+            title: "Export Portal Links",
+            html: content,
+            width: 400
+        });
     };
 
+    // Fonction pour copier dans le presse-papiers
     window.plugin.exportPortalLinks.copyToClipboard = function() {
-        const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
-        let text = `**Selected Portal:**\n**${portalName}** (${portalGuid})\n\nMods:\n`;
-        text += mods.length ? mods.map(mod => `**${mod.name || "Unknown Mod"}** (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})`).join("\n") : "None";
-        text += `\n\nResonators:\n`;
-        text += resonators.length ? resonators.map(res => `**Level ${res.level || "?"}** (Owner: ${res.owner || "Unknown"})`).join("\n") : "None";
-        text += `\n\nLinked Portals:\n`;
-        text += linksData.length ? linksData.map(link => `**${link.name}** (${link.guid})`).join("\n") : "None";
+        const portal = window.portals[window.selectedPortal];
+        if (!portal || !portal.options.data) {
+            alert("Les détails du portail ne sont pas encore chargés.");
+            return;
+        }
+        const details = portal.options.data;
+        let content = `**${details.title} (GUID: ${window.selectedPortal})**\n`; // Nom du portail en gras
 
-        navigator.clipboard.writeText(text).then(() => alert("Données copiées dans le presse-papier !"));
-    };
-
-    window.plugin.exportPortalLinks.downloadFile = function(format) {
-        const { portalName, portalGuid, mods, resonators, linksData } = window.plugin.exportPortalLinks.currentData;
-        const filename = `${portalName.replace(/\s+/g, '_')}.${format}`;
-        let content = "";
-
-        if (format === "csv") {
-            const bom = "\uFEFF"; // UTF-8 BOM pour compatibilité Excel
-            content = bom + `"Selected Portal";"Portal GUID"\n"${portalName}";"${portalGuid}"\n\n`;
-
-            // Ajout des Mods
-            content += `"Mods"\n"Mod Name";"Owner";"Rarity"\n`;
-            content += mods.length ? mods.map(mod => `"${mod.name}";"${mod.owner}";"${mod.rarity}"`).join("\n") : `None;;\n`;
-
-            // Ajout des Résonateurs
-            content += `\n\n"Resonators"\n"Level";"Owner"\n`;
-            content += resonators.length ? resonators.map(res => `"Level ${res.level}";"${res.owner}"`).join("\n") : `None;\n`;
-
-            // Ajout des Liens
-            content += `\n\n"Linked Portals"\n"Portal Name";"Portal GUID"\n`;
-            content += linksData.length ? linksData.map(link => `"${link.name}";"${link.guid}"`).join("\n") : `None;\n`;
-
+        // Vérification si 'mods' est défini et si ce n'est pas un tableau vide
+        if (details.mods && Array.isArray(details.mods) && details.mods.length > 0) {
+            content += "**Mods:**\n";
+            details.mods.forEach(mod => {
+                content += `- **${mod.name || "Unknown"}** (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})\n`; // Mods en gras
+            });
         } else {
-            // Format TXT
-            content = `Selected Portal:\n**${portalName}** (${portalGuid})\n\n`;
-
-            // Ajout des Mods
-            content += `Mods:\n`;
-            content += mods.length ? mods.map(mod => `**${mod.name}** (Owner: ${mod.owner}, Rarity: ${mod.rarity})`).join("\n") : "None";
-            content += `\n\n`;
-
-            // Ajout des Résonateurs
-            content += `Resonators:\n`;
-            content += resonators.length ? resonators.map(res => `**Level ${res.level}** (Owner: ${res.owner})`).join("\n") : "None";
-            content += `\n\n`;
-
-            // Ajout des Liens
-            content += `Linked Portals:\n`;
-            content += linksData.length ? linksData.map(link => `**${link.name}** (${link.guid})`).join("\n") : "None";
+            content += "Mods: None\n";
         }
 
-        const blob = new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8;" : "text/plain;charset=utf-8;" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // Vérification si 'resonators' est défini et si ce n'est pas un tableau vide
+        if (details.resonators && Array.isArray(details.resonators) && details.resonators.length > 0) {
+            content += "**Resonators:**\n";
+            details.resonators.forEach(res => {
+                content += `- **Level ${res.level || "?"}** (Owner: ${res.owner || "Unknown"})\n`; // Résonateurs en gras
+            });
+        } else {
+            content += "Resonators: None\n";
+        }
+
+        // Vérification si des liens existent
+        content += "**Linked Portals:**\n";
+        let linkedPortalsFound = false;
+        Object.values(window.links).forEach(link => {
+            if (link.options.data.oGuid === window.selectedPortal || link.options.data.dGuid === window.selectedPortal) {
+                const linkedPortalGuid = (link.options.data.oGuid === window.selectedPortal) ? link.options.data.dGuid : link.options.data.oGuid;
+                const linkedPortal = window.portals[linkedPortalGuid]?.options.data;
+                if (linkedPortal) {
+                    content += `- **${linkedPortal.title || "Unknown Portal"}** (GUID: ${linkedPortalGuid})\n`; // Portails liés en gras
+                    linkedPortalsFound = true;
+                }
+            }
+        });
+        if (!linkedPortalsFound) content += "Linked Portals: None\n";
+
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert("Contenu copié dans le presse-papiers !");
     };
 
-    window.addHook('portalDetailsUpdated', window.plugin.exportPortalLinks.addExportButton);
+    // Fonction pour ajouter le bouton Export Links dans l'interface
+    window.plugin.exportPortalLinks.addToSidebar = function() {
+        if (!window.selectedPortal) return;
+        const portal = window.portals[window.selectedPortal];
+        if (!portal) return;
+
+        let aside = document.getElementById("export-links-aside");
+        if (!aside) {
+            aside = document.createElement("aside");
+            aside.id = "export-links-aside";
+            document.querySelector(".linkdetails")?.appendChild(aside);
+        }
+
+        if (document.getElementById("export-links-btn")) return;
+
+        const button = document.createElement("a");
+        button.id = "export-links-btn";
+        button.textContent = "Export Links";
+        button.href = "#";
+        button.className = "plugin-button";
+
+        button.onclick = function(event) {
+            event.preventDefault();
+            window.plugin.exportPortalLinks.showExportDialog();
+        };
+
+        aside.appendChild(button);
+    };
+
+    window.addHook('portalDetailsUpdated', window.plugin.exportPortalLinks.addToSidebar);
+
+    // Fonction pour télécharger le fichier CSV avec une ligne par mod et résonateur
+    window.plugin.exportPortalLinks.downloadFile = function(type) {
+        const portal = window.portals[window.selectedPortal];
+        if (!portal || !portal.options.data) {
+            alert("Les détails du portail ne sont pas encore chargés.");
+            return;
+        }
+        const details = portal.options.data;
+        const now = new Date();
+
+        if (type === 'csv') {
+            // Création du fichier CSV avec encodage UTF-8
+            let content = `"Portal Name";"GUID";"Date";"Type";"Name";"Owner";"Rarity/Level";"Linked Portal Name";"Linked Portal GUID"\n`; // Entête du CSV
+
+            // Ajouter la ligne pour chaque mod
+            if (details.mods && Array.isArray(details.mods) && details.mods.length > 0) {
+                details.mods.forEach(mod => {
+                    content += `"${details.title || "Unknown Portal"}";${window.selectedPortal};"${now.toLocaleString()}";"Mod";"${mod.name || "Unknown"}";"${mod.owner || "Unknown"}";"${mod.rarity || "Unknown"}";\n`;
+                });
+            }
+
+            // Ajouter la ligne pour chaque résonateur
+            if (details.resonators && Array.isArray(details.resonators) && details.resonators.length > 0) {
+                details.resonators.forEach(res => {
+                    content += `"${details.title || "Unknown Portal"}";${window.selectedPortal};"${now.toLocaleString()}";"Resonator";"Level ${res.level || "?"}";"${res.owner || "Unknown"}";"";\n`;
+                });
+            }
+
+            // Ajouter la ligne pour chaque portail lié
+            Object.values(window.links).forEach(link => {
+                if (link.options.data.oGuid === window.selectedPortal || link.options.data.dGuid === window.selectedPortal) {
+                    const linkedPortalGuid = (link.options.data.oGuid === window.selectedPortal) ? link.options.data.dGuid : link.options.data.oGuid;
+                    const linkedPortal = window.portals[linkedPortalGuid]?.options.data;
+                    if (linkedPortal) {
+                        content += `"${linkedPortal.title || "Unknown Portal"}";${linkedPortalGuid};"${now.toLocaleString()}";"Linked Portal";"${linkedPortal.title || "Unknown Portal"}";"";"";\n`;
+                    }
+                }
+            });
+
+            // Créer et télécharger un fichier CSV avec encodage UTF-8
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${details.title || "Unknown Portal"}_details.csv`;
+            link.click();
+        }
+
+        if (type === 'txt') {
+            // Création du fichier TXT
+            let content = `**${details.title || "Unknown Portal"} (GUID: ${window.selectedPortal})**\n`;
+            content += `**Date:** ${now.toLocaleString()}\n\n`;
+
+            if (details.mods && Array.isArray(details.mods) && details.mods.length > 0) {
+                content += "**Mods:**\n";
+                details.mods.forEach(mod => {
+                    content += `- **${mod.name || "Unknown"}** (Owner: ${mod.owner || "Unknown"}, Rarity: ${mod.rarity || "Unknown"})\n`;
+                });
+            } else {
+                content += "Mods: None\n";
+            }
+
+            if (details.resonators && Array.isArray(details.resonators) && details.resonators.length > 0) {
+                content += "**Resonators:**\n";
+                details.resonators.forEach(res => {
+                    content += `- **Level ${res.level || "?"}** (Owner: ${res.owner || "Unknown"})\n`;
+                });
+            } else {
+                content += "Resonators: None\n";
+            }
+
+            content += "**Linked Portals:**\n";
+            let linkedPortalsFound = false;
+            Object.values(window.links).forEach(link => {
+                if (link.options.data.oGuid === window.selectedPortal || link.options.data.dGuid === window.selectedPortal) {
+                    const linkedPortalGuid = (link.options.data.oGuid === window.selectedPortal) ? link.options.data.dGuid : link.options.data.oGuid;
+                    const linkedPortal = window.portals[linkedPortalGuid]?.options.data;
+                    if (linkedPortal) {
+                        content += `- **${linkedPortal.title || "Unknown Portal"}** (GUID: ${linkedPortalGuid})\n`;
+                        linkedPortalsFound = true;
+                    }
+                }
+            });
+            if (!linkedPortalsFound) content += "Linked Portals: None\n";
+
+            // Créer et télécharger un fichier TXT
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${details.title || "Unknown Portal"}_details.txt`;
+            link.click();
+        }
+    };
 }
 
 var script = document.createElement("script");
