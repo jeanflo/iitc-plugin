@@ -3,7 +3,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.4.1
+// @version    0.4.2
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://github.com/jeanflo/iitc-plugin/blob/main/export-links.meta.js
 // @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/export-links.user.js
@@ -58,8 +58,9 @@ function wrapper() {
         content += `<button onclick="window.plugin.exportPortalLinks.downloadFile('txt')">📜 Télécharger TXT</button>`;
         content += `<button onclick="window.plugin.exportPortalLinks.downloadFile('csv')">📄 Télécharger CSV</button>`;
 
+        const version = GM_info.script.version;
         window.dialog({
-            title: "Export Portal Links",
+            title: `Export Portal Links v${version}`,
             html: content,
             width: 400
         });
