@@ -1,3 +1,4 @@
+
 // ==UserScript==
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
@@ -109,13 +110,24 @@ function wrapper() {
         });
         if (!linkedPortalsFound) content += "Linked Portals: None\n";
 
-        const textArea = document.createElement('textarea');
-        textArea.value = content;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert("Contenu copié dans le presse-papiers !");
+        // Créer un élément temporaire pour afficher le texte
+        const tempDiv = document.createElement('div');
+        tempDiv.textContent = "Copy to Clipboard";
+        tempDiv.style.position = 'fixed';
+        tempDiv.style.top = '50%';
+        tempDiv.style.left = '50%';
+        tempDiv.style.transform = 'translate(-50%, -50%)';
+        tempDiv.style.padding = '20px';
+        tempDiv.style.background = 'white';
+        tempDiv.style.border = '1px solid black';
+        tempDiv.style.zIndex = '9999';
+
+        document.body.appendChild(tempDiv);
+
+        // Supprimer après 3 secondes
+        setTimeout(() => {
+            document.body.removeChild(tempDiv);
+        }, 3000);
     };
 
     // Fonction pour ajouter le bouton Export Links dans l'interface
