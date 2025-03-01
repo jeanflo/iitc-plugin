@@ -5,7 +5,7 @@
 // @version    0.4.9
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
-// @downloadURL https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links.user.js
+// @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
 // @description Export links, mods, and resonators from a selected portal (including mod rarity).
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
