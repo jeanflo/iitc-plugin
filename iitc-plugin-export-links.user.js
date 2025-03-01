@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.5.0
+// @version    0.5.2
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
@@ -66,7 +66,6 @@ function wrapper() {
     };
 
     // Fonction pour copier dans le presse-papiers
-    // Fonction pour copier dans le presse-papiers
 window.plugin.exportPortalLinks.copyToClipboard = function() {
     const portal = window.portals[window.selectedPortal];
     if (!portal || !portal.options.data) {
@@ -74,7 +73,10 @@ window.plugin.exportPortalLinks.copyToClipboard = function() {
         return;
     }
     const details = portal.options.data;
-    let content = `**${details.title} (GUID: ${window.selectedPortal})**\n`; // Nom du portail en gras
+    const now = new Date().toLocaleString(); // Récupérer la date et l'heure actuelle
+
+    let content = `📅 **Date:** ${now}\n\n`; // Ajout de la date et l'heure au début
+    content += `**${details.title} (GUID: ${window.selectedPortal})**\n`; // Nom du portail en gras
 
     // Vérification si 'mods' est défini et si ce n'est pas un tableau vide
     if (details.mods && Array.isArray(details.mods) && details.mods.length > 0) {
