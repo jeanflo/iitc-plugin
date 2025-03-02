@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.5.2
+// @version    0.5.3
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
@@ -163,7 +163,13 @@ window.plugin.exportPortalLinks.copyToClipboard = function() {
 
         button.onclick = function(event) {
             event.preventDefault();
-            window.plugin.exportPortalLinks.showExportDialog();
+            // Forcer le chargement des détails du portail
+            window.portalDetail.request(window.selectedPortal).then(() => {
+                window.plugin.exportPortalLinks.showExportDialog();
+            }).catch(err => {
+                console.error("Erreur lors du chargement des détails du portail:", err);
+                alert("Impossible de charger les détails du portail.");
+            });
         };
 
         aside.appendChild(button);
