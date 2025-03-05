@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.5.5
+// @version    0.5.4
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
@@ -29,20 +29,9 @@ function wrapper() {
         const details = portal.options.data;
         const portalName = details.title || "Unknown Portal";
         const portalGuid = window.selectedPortal;
-
-        // Vérifier si les détails sont complets, sinon les charger
-        if (!details.mods || !details.resonators) {
-            console.log("Détails incomplets, chargement des infos...");
-            if (window.requestPortalDetails) {
-                window.requestPortalDetails(portalGuid);
-    }
-    setTimeout(() => window.plugin.exportPortalLinks.showExportDialog(), 1000); // Relance après 1s
-    return;
-}
-
-let mods = details.mods || [];
-let resonators = details.resonators || [];
-
+        const now = new Date();
+        let mods = details.mods || [];
+        let resonators = details.resonators || [];
         let linksData = [];
 
         Object.values(window.links).forEach(link => {
