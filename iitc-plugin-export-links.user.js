@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    0.5.3
+// @version    0.5.4
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
@@ -37,7 +37,8 @@ function wrapper() {
         Object.values(window.links).forEach(link => {
             if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
                 let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
-                let linkedPortalName = window.portals[linkedPortalGuid]?.options.data?.title || "Unknown Portal";
+                let linkedPortal = window.portals[linkedPortalGuid];
+                let linkedPortalName = (linkedPortal && linkedPortal.options.data) ? linkedPortal.options.data.title : "Unknown Portal";
                 linksData.push({ name: linkedPortalName, guid: linkedPortalGuid });
             }
         });
