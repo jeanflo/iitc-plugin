@@ -190,7 +190,7 @@ function wrapper() {
         telegramContent += `\n🔗 **Portails reliés:**\n`;
         if (currentPortalData.linkedPortals.length) {
             currentPortalData.linkedPortals.forEach(link => {
-                telegramContent += `  • **${link.name}**\n    \`${link.guid}\`\n`;
+                telegramContent += `  • **${link.name}**\n \`${link.guid}\     `\n`;
             });
         } else {
             telegramContent += `  • Aucun\n`;
