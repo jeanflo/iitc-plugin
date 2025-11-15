@@ -15,7 +15,7 @@
 // ==/UserScript==
 
 function wrapper() {
-    const PLUGIN_VERSION = "1.6.0";
+    const PLUGIN_VERSION = "1.6.2";
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
 
