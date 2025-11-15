@@ -2,7 +2,7 @@
 // @id         iitc-plugin-export-links
 // @name       IITC plugin: Export Portal Links
 // @category   Info
-// @version    1.6.1
+// @version    1.6.2
 // @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
