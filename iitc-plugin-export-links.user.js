@@ -3,10 +3,10 @@
 // @name       IITC plugin: Portal Details Full
 // @category   Info
 // @version    1.6.2
-// @namespace  [https://github.com/jeanflo/iitc-plugin-portal-details-full](https://github.com/jeanflo/iitc-plugin-portal-details-full)
-// @updateURL  [https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js](https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js)
-// @downloadURL [https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js](https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js)
-// @description Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Export CSV/TXT/Excel et Telegram disponibles.
+// @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
+// @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js
+// @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js
+// @description Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Export CSV/TXT/Excel et Telegram disponibles. Boutons d’export désactivés sur mobile.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -75,7 +75,7 @@ function wrapper() {
         csvContent += `"𝗚𝗨𝗜𝗗";"${portalGuid}"\n\n`;
 
         csvContent += '"𝗠𝗢𝗗𝗦"\n';
-        csvContent += '"𝗡𝗼𝗺";"𝗣𝗿𝗼𝗽𝗿𝗶𝗲́𝘁𝗮𝗶𝗿𝗲";"𝗥𝗮𝗿𝗲𝘁𝗲́"\n';
+        csvContent += '"𝗡𝗼𝗺";"𝗣𝗿𝗼𝗽𝗿𝗶𝗲́𝘁𝗮𝗶𝗿𝗲";"𝗥𝗮𝗿𝗲𝘁é"\n';
         let filteredMods = currentPortalData.mods.filter(mod => mod !== null);
         if (filteredMods.length) {
             filteredMods.forEach(mod => {
@@ -203,6 +203,7 @@ function wrapper() {
             alert("❌ Impossible de copier dans le presse-papiers.");
         });
     };
+
     window.plugin.portalDetailsFull.exportToExcel = function() {
         if (!currentPortalData) return;
 
@@ -457,48 +458,61 @@ function wrapper() {
         content += `<div style="text-align:right;font-size:10px;color:#888;margin-top:8px;">Version du plugin : <b>${PLUGIN_VERSION}</b></div>`;
         content += `</div>`;
 
+        // Détection simple mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // Liste des boutons
+        let buttons = [
+            {
+                text: '📊 CSV',
+                click: function() {
+                    window.plugin.portalDetailsFull.exportToCSV();
+                },
+                class: 'export-button-left'
+            },
+            {
+                text: '📄 TXT',
+                click: function() {
+                    window.plugin.portalDetailsFull.exportToTXT();
+                },
+                class: 'export-button-left'
+            },
+            {
+                text: '📗 Excel',
+                click: function() {
+                    window.plugin.portalDetailsFull.exportToExcel();
+                },
+                class: 'export-button-left'
+            },
+            {
+                text: '✈️ Telegram',
+                click: function() {
+                    window.plugin.portalDetailsFull.exportToTelegram();
+                },
+                class: 'export-button-left'
+            },
+            {
+                text: 'OK',
+                click: function() {
+                    $(this).dialog('close');
+                },
+                class: 'ok-button-right'
+            }
+        ];
+
+        // Sur mobile, retirer les boutons CSV, TXT, Excel
+        if (isMobile) {
+            buttons = buttons.filter(b =>
+                b.text !== '📊 CSV' && b.text !== '📄 TXT' && b.text !== '📗 Excel'
+            );
+        }
+
         let dialogOptions = {
             title: `Détails du portail`,
             html: content,
             width: 400,
             id: 'portal-details-full-dialog',
-            buttons: [
-                {
-                    text: '📊 CSV',
-                    click: function() {
-                        window.plugin.portalDetailsFull.exportToCSV();
-                    },
-                    class: 'export-button-left'
-                },
-                {
-                    text: '📄 TXT',
-                    click: function() {
-                        window.plugin.portalDetailsFull.exportToTXT();
-                    },
-                    class: 'export-button-left'
-                },
-                {
-                    text: '📗 Excel',
-                    click: function() {
-                        window.plugin.portalDetailsFull.exportToExcel();
-                    },
-                    class: 'export-button-left'
-                },
-                {
-                    text: '✈️ Telegram',
-                    click: function() {
-                        window.plugin.portalDetailsFull.exportToTelegram();
-                    },
-                    class: 'export-button-left'
-                },
-                {
-                    text: 'OK',
-                    click: function() {
-                        $(this).dialog('close');
-                    },
-                    class: 'ok-button-right'
-                }
-            ]
+            buttons: buttons
         };
 
         window.dialog(dialogOptions);
