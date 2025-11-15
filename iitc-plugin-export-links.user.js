@@ -2,7 +2,7 @@
 // @id         iitc-plugin-portal-details-full
 // @name       IITC plugin: Portal Details Full
 // @category   Info
-// @version    1.6.4
+// @version    1.6.5
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js
@@ -14,8 +14,9 @@
 // @grant       none
 // ==/UserScript==
 
-function wrapper() {
-    const PLUGIN_VERSION = "1.6.4";
+function wrapper(plugin_info) {
+    // Récupération automatique de la version depuis l'en-tête du script
+    const PLUGIN_VERSION = plugin_info.script.version || "1.6.4";
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
 
