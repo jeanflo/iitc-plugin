@@ -1,12 +1,12 @@
 // ==UserScript==
-// @id         iitc-plugin-export-links
-// @name       IITC plugin: Export Portal Links
+// @id         iitc-plugin-portal-details-full
+// @name       IITC plugin: Portal Details Full
 // @category   Info
-// @version    1.6.0
-// @namespace  https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-export-links
-// @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.meta.js
-// @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/iitc-plugin-export-links.user.js
-// @description Export links, mods, and resonators from a selected portal (including mod rarity).
+// @version    1.6.1
+// @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
+// @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js
+// @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js
+// @description Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Export CSV/TXT/Excel et Telegram disponibles.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -15,11 +15,10 @@
 // ==/UserScript==
 
 function wrapper() {
-    const PLUGIN_VERSION = "1.6.0";
+    const PLUGIN_VERSION = "1.6.1";
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
 
-    // Charger ExcelJS si pas déjà présent
     if (!window.ExcelJS) {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
@@ -47,13 +46,36 @@ function wrapper() {
         }
     };
 
+    // Fonction utilitaire commune pour créer lien téléchargable visible temporaire
+    function showDownloadLink(blob, filename, label) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.textContent = label;
+        link.style.position = 'fixed';
+        link.style.top = '10px';
+        link.style.left = '10px';
+        link.style.zIndex = '10000';
+        link.style.backgroundColor = '#444';
+        link.style.color = '#fff';
+        link.style.padding = '10px';
+        link.style.borderRadius = '5px';
+        link.style.textDecoration = 'none';
+
+        document.body.appendChild(link);
+
+        setTimeout(() => {
+            URL.revokeObjectURL(link.href);
+            link.remove();
+        }, 30000);
+    }
+
     window.plugin.portalDetailsFull.exportToCSV = function() {
         if (!currentPortalData) return;
 
         const BOM = '\uFEFF';
         const now = new Date().toLocaleString();
         const portalName = currentPortalData.portalName;
-        const portalGuid = currentPortalData.portalGuid;
 
         function toBold(text) {
             const boldMap = {
@@ -71,11 +93,10 @@ function wrapper() {
 
         let csvContent = '';
         csvContent += `"𝗗𝗮𝘁𝗲";"${toBold(now)}"\n`;
-        csvContent += `"𝗣𝗼𝗿𝘁𝗮𝗶𝗹";"${portalName}"\n`;
-        csvContent += `"𝗚𝗨𝗜𝗗";"${portalGuid}"\n\n`;
+        csvContent += `"𝗣𝗼𝗿𝘁𝗮𝗶𝗹";"${portalName}"\n\n`;
 
         csvContent += '"𝗠𝗢𝗗𝗦"\n';
-        csvContent += '"𝗡𝗼𝗺";"𝗣𝗿𝗼𝗽𝗿𝗶𝗲́𝘁𝗮𝗶𝗿𝗲";"𝗥𝗮𝗿𝗲𝘁𝗲́"\n';
+        csvContent += '"𝗡𝗼𝗺";"𝗣𝗿𝗼𝗽𝗿𝗶𝗲́𝘁𝗮𝗶𝗿𝗲";"𝗥𝗮𝗿𝗲𝘁é"\n';
         let filteredMods = currentPortalData.mods.filter(mod => mod !== null);
         if (filteredMods.length) {
             filteredMods.forEach(mod => {
@@ -109,10 +130,7 @@ function wrapper() {
         }
 
         const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${portalName.replace(/[^a-z0-9]/gi, '_')}_details.csv`;
-        link.click();
+        showDownloadLink(blob, `${portalName.replace(/[^a-z0-9]/gi, '_')}_details.csv`, "Cliquez ici pour télécharger le fichier CSV");
     };
 
     window.plugin.portalDetailsFull.exportToTXT = function() {
@@ -153,56 +171,9 @@ function wrapper() {
         }
 
         const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${currentPortalData.portalName.replace(/[^a-z0-9]/gi, '_')}_details.txt`;
-        link.click();
+        showDownloadLink(blob, `${currentPortalData.portalName.replace(/[^a-z0-9]/gi, '_')}_details.txt`, "Cliquez ici pour télécharger le fichier TXT");
     };
 
-    window.plugin.portalDetailsFull.exportToTelegram = function() {
-        if (!currentPortalData) return;
-
-        const now = new Date().toLocaleString();
-        let telegramContent = `📅 ${now}\n\n`;
-        telegramContent += `📍 **${currentPortalData.portalName}**\n`;
-        telegramContent += `🆔 \`${currentPortalData.portalGuid}\`\n\n`;
-
-        telegramContent += `🔧 **Mods:**\n`;
-        let filteredMods = currentPortalData.mods.filter(mod => mod !== null);
-        if (filteredMods.length) {
-            filteredMods.forEach(mod => {
-                telegramContent += `  • **${mod.name || 'Inconnu'}** (${mod.owner || 'Inconnu'}, ${mod.rarity || 'Inconnue'})\n`;
-            });
-        } else {
-            telegramContent += `  • Aucun\n`;
-        }
-
-        telegramContent += `\n⚡ **Résonateurs:**\n`;
-        let filteredRes = currentPortalData.resonators.filter(res => res !== null);
-        if (filteredRes.length) {
-            filteredRes.forEach(res => {
-                telegramContent += `  • **Niveau ${res.level || '?'}** (${res.owner || 'Inconnu'})\n`;
-            });
-        } else {
-            telegramContent += `  • Aucun\n`;
-        }
-
-        telegramContent += `\n🔗 **Portails reliés:**\n`;
-        if (currentPortalData.linkedPortals.length) {
-            currentPortalData.linkedPortals.forEach(link => {
-                telegramContent += `  • **${link.name}**\n    \`${link.guid}\`\n`;
-            });
-        } else {
-            telegramContent += `  • Aucun\n`;
-        }
-
-        navigator.clipboard.writeText(telegramContent).then(() => {
-            alert("✅ Données copiées au format Telegram !\nCollez directement dans votre groupe Telegram.");
-        }).catch(err => {
-            console.error("Erreur lors de la copie : ", err);
-            alert("❌ Impossible de copier dans le presse-papiers.");
-        });
-    };
     window.plugin.portalDetailsFull.exportToExcel = function() {
         if (!currentPortalData) return;
 
@@ -308,10 +279,7 @@ function wrapper() {
 
         workbook.xlsx.writeBuffer().then(buffer => {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${portalName.replace(/[^a-z0-9]/gi, '_')}_details.xlsx`;
-            link.click();
+            showDownloadLink(blob, `${portalName.replace(/[^a-z0-9]/gi, '_')}_details.xlsx`, "Cliquez ici pour télécharger le fichier Excel");
         }).catch(err => {
             console.error('Erreur export Excel:', err);
             alert('❌ Erreur lors de l\'export Excel');
@@ -549,7 +517,7 @@ function wrapper() {
 
         const button = document.createElement("a");
         button.id = "portal-details-full-btn";
-        button.textContent = "Export Links";
+        button.textContent = "Détails Avancés";
         button.href = "#";
         button.className = "plugin-button";
 
