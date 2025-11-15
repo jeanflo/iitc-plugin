@@ -1,6 +1,6 @@
 // ==UserScript==
-// @id         iitc-plugin-portal-details-full
-// @name       IITC plugin: Portal Details Full
+// @id         iitc-plugin-full-portal-details
+// @name       IITC plugin: Full Portal Details
 // @category   Info
 // @version    1.6.5
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
@@ -34,6 +34,7 @@ function wrapper() {
     console.log("Version détectée :", PLUGIN_VERSION);
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
+
 
     // Charger ExcelJS si pas déjà présent
     if (!window.ExcelJS) {
@@ -429,7 +430,7 @@ function wrapper() {
         let content = `<div id="portal-details-full-content" style="position:relative;">`;
         content += `<div style="display:flex; justify-content:space-between; align-items:center;">`;
         content += `<h3 style="margin:0;"><u><b>${now.toLocaleString()}</b></u></h3>`;
-        content += `<button id="telegram-copy-btn" style="padding:4px 8px; font-size:14px; cursor:pointer; margin-left:10px;">✈️ Copier Telegram</button>`;
+        content += `<button id="telegram-copy-btn" style="padding:4px 8px; font-size:14px; cursor:pointer; margin-left:10px;">✈️ Export To Telegram</button>`;
         content += `</div>`;
 
         content += `<h3><b><a href="#" class="portal-link main-portal-link" data-guid="${portalGuid}" style="color:#ffce00;text-decoration:none;cursor:pointer;">${portalName}</a></b></h3>`;
@@ -475,9 +476,7 @@ function wrapper() {
             content += "<li>Aucun</li>";
         }
 
-        content += `</ul>`;
-        content += `<div style="text-align:right;font-size:10px;color:#888;margin-top:8px;">Version du plugin : <b>${PLUGIN_VERSION}</b></div>`;
-        content += `</div>`;
+
 
         // Détection simple mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -514,7 +513,7 @@ function wrapper() {
         }
 
         window.dialog({
-            title: `Détails du portail`,
+            title: `Full Portal Details - v${PLUGIN_VERSION}`,
             html: content,
             width: 400,
             id: 'portal-details-full-dialog',
@@ -575,7 +574,7 @@ function wrapper() {
 
         const button = document.createElement("a");
         button.id = "portal-details-full-btn";
-        button.textContent = "Export Links";
+        button.textContent = "Full Portal Details";
         button.href = "#";
         button.className = "plugin-button";
 
