@@ -6,7 +6,7 @@
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js
-// @description Displays mods, resonators (level & owner), and linked portals (GUID name) for the selected portal. Telegram export is located next to the date and time. CSV export is also available.
+// @description Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -14,9 +14,24 @@
 // @grant       none
 // ==/UserScript==
 
-function wrapper(plugin_info) {
-    // Récupération automatique de la version depuis l'en-tête du script
-    const PLUGIN_VERSION = plugin_info.script.version || "1.6.4";
+var info = {};
+if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
+  info.script = {
+    version: GM_info.script.version,
+    name: GM_info.script.name,
+    description: GM_info.script.description
+  };
+} else {
+  info.script = {
+    version: "inconnu",
+    name: "inconnu",
+    description: "inconnu"
+  };
+}
+
+function wrapper() {
+    const PLUGIN_VERSION = info.script.version;
+    console.log("Version détectée :", PLUGIN_VERSION);
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
 
@@ -189,15 +204,13 @@ function wrapper(plugin_info) {
         }
 
         telegramContent += `\n🔗 **Portails reliés:**\n`;
-if (currentPortalData.linkedPortals.length) {
-    currentPortalData.linkedPortals.forEach(link => {
-        telegramContent += `  • **${link.name}** \`${link.guid}\`\n\n`;
-    });
-} else {
-    telegramContent += `  • Aucun\n`;
-}
-
-
+        if (currentPortalData.linkedPortals.length) {
+            currentPortalData.linkedPortals.forEach(link => {
+                telegramContent += `  • **${link.name}**\n    \`${link.guid}\`\n`;
+            });
+        } else {
+            telegramContent += `  • Aucun\n`;
+        }
 
         navigator.clipboard.writeText(telegramContent).then(() => {
             alert("✅ Données copiées au format Telegram !\nCollez directement dans votre groupe Telegram.");
@@ -562,7 +575,7 @@ if (currentPortalData.linkedPortals.length) {
 
         const button = document.createElement("a");
         button.id = "portal-details-full-btn";
-        button.textContent = "Portal Details Export";
+        button.textContent = "Export Links";
         button.href = "#";
         button.className = "plugin-button";
 
