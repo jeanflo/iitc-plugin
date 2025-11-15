@@ -467,7 +467,7 @@ function wrapper() {
                     content += `<li id="${liId}"><b><a href="#" class="portal-link" data-guid="${linkedPortalGuid}" style="color:#ffce00;text-decoration:none;cursor:pointer;">${linkedPortal.options.data.title}</a></b> (GUID: ${linkedPortalGuid})</li>`;
                 } else {
                     currentPortalData.linkedPortals.push({ name: "Chargement...", guid: linkedPortalGuid });
-                    content += `<li id="${liId}"><span style="color:orange;">Chargement...</span> (GUID: ${linkedPortalGuid})</li>`;
+                    content += `<li id="${liId}"><span style="color:red;">Chargement...</span> (GUID: ${linkedPortalGuid})</li>`;
                 }
             }
         });
