@@ -549,7 +549,7 @@ function wrapper() {
 
         const button = document.createElement("a");
         button.id = "portal-details-full-btn";
-        button.textContent = "Détails Avancés";
+        button.textContent = "Export Links";
         button.href = "#";
         button.className = "plugin-button";
 
