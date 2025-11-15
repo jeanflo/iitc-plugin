@@ -203,11 +203,15 @@ function wrapper() {
         } else {
             telegramContent += `  • Aucun\n`;
         }
-
+        function escapeMarkdown(text) {
+            return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+        }
         telegramContent += `\n🔗 **Portails reliés:**\n`;
-        if (currentPortalData.linkedPortals.length) {
+        if(currentPortalData.linkedPortals.length) {
             currentPortalData.linkedPortals.forEach(link => {
-                telegramContent += `  • **${link.name}**\n    \`${link.guid}\`\n`;
+                const escapedName = escapeMarkdown(link.name);
+                const url = `https://link.ingress.com/portal/${link.guid}`;
+                telegramContent += `  • ${escapedName}\n${url}\n\n`;
             });
         } else {
             telegramContent += `  • Aucun\n`;
