@@ -6,7 +6,7 @@
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js
-// @description Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Export CSV/TXT/Excel et Telegram disponibles. Boutons d’export désactivés sur mobile.
+// @description Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -409,8 +409,13 @@ function wrapper() {
             linkedPortals: []
         };
 
-        let content = `<div id="portal-details-full-content">`;
-        content += `<h3><u><b>${now.toLocaleString()}</b></u></h3>`;
+        // Construction du contenu avec bouton Telegram à côté de la date
+        let content = `<div id="portal-details-full-content" style="position:relative;">`;
+        content += `<div style="display:flex; justify-content:space-between; align-items:center;">`;
+        content += `<h3 style="margin:0;"><u><b>${now.toLocaleString()}</b></u></h3>`;
+        content += `<button id="telegram-copy-btn" style="padding:4px 8px; font-size:14px; cursor:pointer; margin-left:10px;">✈️ Copier Telegram</button>`;
+        content += `</div>`;
+
         content += `<h3><b><a href="#" class="portal-link main-portal-link" data-guid="${portalGuid}" style="color:#ffce00;text-decoration:none;cursor:pointer;">${portalName}</a></b></h3>`;
         content += `<p><b>GUID:</b> ${portalGuid}</p>`;
 
@@ -461,63 +466,55 @@ function wrapper() {
         // Détection simple mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // Liste des boutons
+        // Liste boutons sans Telegram (depuis bouton en haut)
         let buttons = [
             {
                 text: '📊 CSV',
-                click: function() {
-                    window.plugin.portalDetailsFull.exportToCSV();
-                },
+                click: function() { window.plugin.portalDetailsFull.exportToCSV(); },
                 class: 'export-button-left'
             },
             {
                 text: '📄 TXT',
-                click: function() {
-                    window.plugin.portalDetailsFull.exportToTXT();
-                },
+                click: function() { window.plugin.portalDetailsFull.exportToTXT(); },
                 class: 'export-button-left'
             },
             {
                 text: '📗 Excel',
-                click: function() {
-                    window.plugin.portalDetailsFull.exportToExcel();
-                },
-                class: 'export-button-left'
-            },
-            {
-                text: '✈️ Telegram',
-                click: function() {
-                    window.plugin.portalDetailsFull.exportToTelegram();
-                },
+                click: function() { window.plugin.portalDetailsFull.exportToExcel(); },
                 class: 'export-button-left'
             },
             {
                 text: 'OK',
-                click: function() {
-                    $(this).dialog('close');
-                },
+                click: function() { $(this).dialog('close'); },
                 class: 'ok-button-right'
             }
         ];
 
-        // Sur mobile, retirer les boutons CSV, TXT, Excel
+        // Retirer boutons d’export sous mobile
         if (isMobile) {
             buttons = buttons.filter(b =>
                 b.text !== '📊 CSV' && b.text !== '📄 TXT' && b.text !== '📗 Excel'
             );
         }
 
-        let dialogOptions = {
+        window.dialog({
             title: `Détails du portail`,
             html: content,
             width: 400,
             id: 'portal-details-full-dialog',
             buttons: buttons
-        };
+        });
 
-        window.dialog(dialogOptions);
+        // Liaison bouton Telegram
+        setTimeout(() => {
+            const telegramBtn = document.getElementById('telegram-copy-btn');
+            if (telegramBtn) {
+                telegramBtn.onclick = function() {
+                    window.plugin.portalDetailsFull.exportToTelegram();
+                };
+            }
 
-        setTimeout(function() {
+            // Style boutons dialog et liens portails
             let dialogButtons = $('.ui-dialog-buttonpane');
             if (dialogButtons.length) {
                 dialogButtons.find('button.export-button-left').css({
@@ -529,7 +526,7 @@ function wrapper() {
                 });
             }
 
-            document.querySelectorAll('.portal-link').forEach(function(link) {
+            document.querySelectorAll('.portal-link').forEach(link => {
                 link.onclick = function(e) {
                     e.preventDefault();
                     let guid = this.getAttribute('data-guid');
@@ -538,9 +535,8 @@ function wrapper() {
             });
         }, 100);
 
-        linkedPortalGuids.forEach(function(linkedPortalGuid) {
+        linkedPortalGuids.forEach(linkedPortalGuid => {
             let linkedPortal = window.portals[linkedPortalGuid];
-
             if (!linkedPortal || !linkedPortal.options.data || !linkedPortal.options.data.title) {
                 window.plugin.portalDetailsFull.loadLinkedPortal(linkedPortalGuid, portalGuid);
             }
