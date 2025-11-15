@@ -176,4 +176,136 @@ function wrapper() {
         };
 
         let content = `<div id="portal-details-full-content">`;
-        content += `<h3><u><b>${now.toLocaleString()}</
+        content += `<h3><u><b>${now.toLocaleString()}</b></u></h3>`;
+        content += `<h3><b><a href="#" class="portal-link main-portal-link" data-guid="${portalGuid}" style="color:#ffce00;text-decoration:none;cursor:pointer;">${portalName}</a></b></h3>`;
+        content += `<p><b>GUID:</b> ${portalGuid}</p>`;
+
+        content += `<h4><b>Mods</b></h4><ul>`;
+        let filteredMods = mods.filter(mod => mod !== null);
+        content += filteredMods.length
+            ? filteredMods.map(mod => `<li><b>${mod.name || "Mod inconnu"}</b> (Propriétaire: ${mod.owner || "Inconnu"}, Rareté: ${mod.rarity || "Inconnue"})</li>`).join('')
+            : "<li>Aucun</li>";
+        content += `</ul>`;
+
+        content += `<h4><b>Résonateurs</b></h4><ul>`;
+        let filteredRes = resonators.filter(res => res !== null);
+        content += filteredRes.length
+            ? filteredRes.map(res => `<li><b>Niveau ${res.level || "?"}</b> (Propriétaire: ${res.owner || "Inconnu"})</li>`).join('')
+            : "<li>Aucun</li>";
+        content += `</ul>`;
+
+        content += `<h4><b>Portails reliés</b></h4><ul id="linked-portals-list">`;
+
+        let linksFound = false;
+        let linkedPortalGuids = [];
+        Object.values(window.links).forEach(link => {
+            if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
+                linksFound = true;
+                let linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
+                linkedPortalGuids.push(linkedPortalGuid);
+                let liId = `linked-portal-${linkedPortalGuid.replace(/\./g, '-')}`;
+
+                let linkedPortal = window.portals[linkedPortalGuid];
+                if (linkedPortal && linkedPortal.options.data && linkedPortal.options.data.title) {
+                    currentPortalData.linkedPortals.push({ name: linkedPortal.options.data.title, guid: linkedPortalGuid });
+                    content += `<li id="${liId}"><b><a href="#" class="portal-link" data-guid="${linkedPortalGuid}" style="color:#ffce00;text-decoration:none;cursor:pointer;">${linkedPortal.options.data.title}</a></b> (GUID: ${linkedPortalGuid})</li>`;
+                } else {
+                    currentPortalData.linkedPortals.push({ name: "Chargement...", guid: linkedPortalGuid });
+                    content += `<li id="${liId}"><span style="color:orange;">Chargement...</span> (GUID: ${linkedPortalGuid})</li>`;
+                }
+            }
+        });
+
+        if (!linksFound) {
+            content += "<li>Aucun</li>";
+        }
+
+        content += `</ul>`;
+        content += `<div style="text-align:right;font-size:10px;color:#888;margin-top:8px;">Version du plugin : <b>${PLUGIN_VERSION}</b></div>`;
+        content += `</div>`;
+
+        let dialogOptions = {
+            title: `Détails du portail`,
+            html: content,
+            width: 400,
+            id: 'portal-details-full-dialog',
+            buttons: [
+                {
+                    text: '✈️ Telegram',
+                    click: function() {
+                        window.plugin.portalDetailsFull.exportToTelegram();
+                    },
+                    class: 'export-button-left'
+                },
+                {
+                    text: 'OK',
+                    click: function() {
+                        $(this).dialog('close');
+                    },
+                    class: 'ok-button-right'
+                }
+            ]
+        };
+
+        window.dialog(dialogOptions);
+
+        setTimeout(function() {
+            let dialogButtons = $('.ui-dialog-buttonpane');
+            if (dialogButtons.length) {
+                dialogButtons.find('button.export-button-left').css({
+                    'float': 'left',
+                    'margin-right': '5px'
+                });
+                dialogButtons.find('button.ok-button-right').css({
+                    'float': 'right'
+                });
+            }
+
+            document.querySelectorAll('.portal-link').forEach(function(link) {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    let guid = this.getAttribute('data-guid');
+                    window.plugin.portalDetailsFull.selectPortal(guid);
+                };
+            });
+        }, 100);
+
+        linkedPortalGuids.forEach(function(linkedPortalGuid) {
+            let linkedPortal = window.portals[linkedPortalGuid];
+            if (!linkedPortal || !linkedPortal.options.data || !linkedPortal.options.data.title) {
+                window.plugin.portalDetailsFull.loadLinkedPortal(linkedPortalGuid, portalGuid);
+            }
+        });
+    };
+
+    window.plugin.portalDetailsFull.addToSidebar = function() {
+        if (!window.selectedPortal) return;
+        const portal = window.portals[window.selectedPortal];
+        if (!portal) return;
+
+        let aside = document.getElementById("portal-details-full-aside");
+        if (!aside) {
+            aside = document.createElement("aside");
+            aside.id = "portal-details-full-aside";
+            document.querySelector(".linkdetails")?.appendChild(aside);
+        }
+
+        if (document.getElementById("portal-details-full-btn")) return;
+
+        const button = document.createElement("a");
+        button.id = "portal-details-full-btn";
+        button.textContent = "Détails Avancés";
+        button.href = "#";
+        button.className = "plugin-button";
+
+        button.onclick = function(event) {
+            event.preventDefault();
+            window.plugin.portalDetailsFull.showDetailsDialog();
+        };
+        aside.appendChild(button);
+    };
+
+    window.addHook('portalDetailsUpdated', window.plugin.portalDetailsFull.addToSidebar);
+    window.plugin.portalDetailsFull.addToSidebar();
+}
+wrapper();
