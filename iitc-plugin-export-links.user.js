@@ -561,7 +561,7 @@ if (currentPortalData.linkedPortals.length) {
 
         const button = document.createElement("a");
         button.id = "portal-details-full-btn";
-        button.textContent = "Export Links";
+        button.textContent = "Portal Details Export";
         button.href = "#";
         button.className = "plugin-button";
 
