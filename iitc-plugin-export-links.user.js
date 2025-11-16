@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.7.5
+// @version    1.8.0
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 1.7.5 Ultra compatible Android ES5. Affiche les details complets du portail.
+// @description 1.8.0 English version - Android compatible. Shows full portal details with mods, resonators and linked portals.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -15,58 +15,23 @@
 // ==/UserScript==
 
 function wrapper(plugin_info) {
-    var PLUGIN_VERSION = "1.7.5";
-    var PLUGIN_NAME = "Full Portal Details";
+    var PLUGIN_VERSION = '1.8.0';
+    var currentPortalData = null;
 
-    console.log("[Full Portal Details] Initialisation v" + PLUGIN_VERSION);
+    console.log('[Full Portal Details] Init v' + PLUGIN_VERSION);
 
     if (typeof window.plugin !== 'function') {
         window.plugin = function() {};
     }
     window.plugin.portalDetailsFull = function() {};
 
-    if (!window.ExcelJS) {
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
-        document.head.appendChild(script);
-    }
-
-    var failedPortals = {};
-    var retryTimers = {};
-    var currentPortalData = null;
-
-    var isMobileDevice = function() {
+    function isMobileDevice() {
         var ua = navigator.userAgent;
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-            return true;
-        }
-        if (window.useAndroidPanes !== undefined) {
-            return true;
-        }
-        if (typeof window.isSmartphone === 'function' && window.isSmartphone()) {
+        if (/Android|iPhone|iPad|iPod/i.test(ua)) {
             return true;
         }
         return false;
-    };
-
-    console.log("[Full Portal Details] Mobile:", isMobileDevice());
-
-    window.plugin.portalDetailsFull.selectPortal = function(guid) {
-        var portal = window.portals[guid];
-        if (portal) {
-            var latLng = portal.getLatLng();
-            window.map.setView(latLng);
-            window.renderPortalDetails(guid);
-        } else {
-            window.portalDetail.request(guid).done(function(data) {
-                if (data.latE6 && data.lngE6) {
-                    var lat = data.latE6 / 1e6;
-                    var lng = data.lngE6 / 1e6;
-                    window.zoomToAndShowPortal(guid, [lat, lng]);
-                }
-            });
-        }
-    };
+    }
 
     window.plugin.portalDetailsFull.exportToTelegram = function() {
         if (!currentPortalData) {
@@ -74,389 +39,243 @@ function wrapper(plugin_info) {
         }
 
         var now = new Date().toLocaleString();
-        var telegramContent = '[Date] ' + now + '\n\n';
-        telegramContent += '[Portail] **' + currentPortalData.portalName + '**\n';
-        telegramContent += '[GUID] `' + currentPortalData.portalGuid + '`\n\n';
+        var text = '[Date] ' + now + '\n\n';
+        text += '[Portal] **' + currentPortalData.portalName + '**\n';
+        text += '[GUID] ' + currentPortalData.portalGuid + '\n\n';
 
-        telegramContent += '**Mods:**\n';
+        text += '**Mods:**\n';
         var mods = currentPortalData.mods;
-        var hasMods = false;
         var i;
+        var hasMods = false;
         for (i = 0; i < mods.length; i++) {
-            if (mods[i] !== null) {
+            if (mods[i]) {
                 hasMods = true;
-                var modName = mods[i].name || 'Inconnu';
-                var modOwner = mods[i].owner || 'Inconnu';
-                var modRarity = mods[i].rarity || 'Inconnue';
-                telegramContent += '  - **' + modName + '** (' + modOwner + ', ' + modRarity + ')\n';
+                var modName = mods[i].name || 'Unknown';
+                var modOwner = mods[i].owner || 'Unknown';
+                var modRarity = mods[i].rarity || 'Unknown';
+                text += '  - **' + modName + '** (' + modOwner + ', ' + modRarity + ')\n';
             }
         }
         if (!hasMods) {
-            telegramContent += '  - Aucun\n';
+            text += '  - None\n';
         }
 
-        telegramContent += '\n**Resonateurs:**\n';
+        text += '\n**Resonators:**\n';
         var resonators = currentPortalData.resonators;
-        var hasResonators = false;
+        var hasRes = false;
         for (i = 0; i < resonators.length; i++) {
-            if (resonators[i] !== null) {
-                hasResonators = true;
+            if (resonators[i]) {
+                hasRes = true;
                 var resLevel = resonators[i].level || '?';
-                var resOwner = resonators[i].owner || 'Inconnu';
-                telegramContent += '  - **Niveau ' + resLevel + '** (' + resOwner + ')\n';
+                var resOwner = resonators[i].owner || 'Unknown';
+                text += '  - **Level ' + resLevel + '** (' + resOwner + ')\n';
             }
         }
-        if (!hasResonators) {
-            telegramContent += '  - Aucun\n';
+        if (!hasRes) {
+            text += '  - None\n';
         }
 
-        function escapeMarkdown(text) {
-            return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
-        }
-
-        telegramContent += '\n**Portails relies:**\n';
-        var linkedPortals = currentPortalData.linkedPortals;
-        if (linkedPortals.length > 0) {
-            for (i = 0; i < linkedPortals.length; i++) {
-                var link = linkedPortals[i];
-                var escapedName = escapeMarkdown(link.name);
-                var url = 'https://link.ingress.com/portal/' + link.guid;
-                telegramContent += '  - ' + escapedName + '\n' + url + '\n\n';
+        text += '\n**Linked portals:**\n';
+        var links = currentPortalData.linkedPortals;
+        if (links.length > 0) {
+            for (i = 0; i < links.length; i++) {
+                text += '  - ' + links[i].name + '\n';
+                text += 'https://link.ingress.com/portal/' + links[i].guid + '\n\n';
             }
         } else {
-            telegramContent += '  - Aucun\n';
+            text += '  - None\n';
         }
 
-        navigator.clipboard.writeText(telegramContent).then(function() {
-            alert("OK - Donnees copiees au format Telegram !");
+        navigator.clipboard.writeText(text).then(function() {
+            alert('OK - Data copied to clipboard!\nPaste it directly into your Telegram group.');
         }).catch(function(err) {
-            console.error("[Full Portal Details] Erreur copie:", err);
-            alert("ERREUR - Impossible de copier dans le presse-papiers.");
+            console.error('[Full Portal Details] Copy error:', err);
+            alert('ERROR - Unable to copy to clipboard.');
         });
     };
 
-    window.plugin.portalDetailsFull.loadLinkedPortal = function(linkedPortalGuid, portalGuid) {
-        var liId = 'linked-portal-' + linkedPortalGuid.replace(/\./g, '-');
-        var li = document.getElementById(liId);
-        if (!li) {
-            return;
-        }
-
-        window.portalDetail.request(linkedPortalGuid).done(function(data) {
-            if (li && data && data.title) {
-                li.innerHTML = '<b><a href="#" class="portal-link" data-guid="' + linkedPortalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + data.title + '</a></b> (GUID: ' + linkedPortalGuid + ')';
-                delete failedPortals[linkedPortalGuid];
-
-                if (currentPortalData) {
-                    var linkedList = currentPortalData.linkedPortals;
-                    var j;
-                    for (j = 0; j < linkedList.length; j++) {
-                        if (linkedList[j].guid === linkedPortalGuid) {
-                            linkedList[j].name = data.title;
-                            break;
-                        }
-                    }
-                }
-
-                var link = li.querySelector('.portal-link');
-                if (link) {
-                    link.onclick = function(e) {
-                        e.preventDefault();
-                        window.plugin.portalDetailsFull.selectPortal(linkedPortalGuid);
-                    };
-                }
-            }
-        }).fail(function() {
-            if (li) {
-                li.innerHTML = '<span style="color:red;">Echec du chargement</span> (GUID: ' + linkedPortalGuid + ')';
-                failedPortals[linkedPortalGuid] = true;
-
-                if (retryTimers[linkedPortalGuid]) {
-                    clearTimeout(retryTimers[linkedPortalGuid]);
-                }
-                retryTimers[linkedPortalGuid] = setTimeout(function() {
-                    window.plugin.portalDetailsFull.loadLinkedPortal(linkedPortalGuid, portalGuid);
-                }, 2000);
-            }
-        });
-    };
-
-    window.plugin.portalDetailsFull.showDetailsDialog = function(retryCount) {
-        if (!retryCount) {
-            retryCount = 0;
-        }
-
+    window.plugin.portalDetailsFull.showDetailsDialog = function() {
         if (!window.selectedPortal) {
-            console.log("[Full Portal Details] Aucun portail selectionne");
+            console.log('[Full Portal Details] No portal selected');
             return;
         }
 
         var portal = window.portals[window.selectedPortal];
-
         if (!portal || !portal.options.data) {
-            console.log("[Full Portal Details] Chargement des details du portail...");
-
-            if (retryCount < 3) {
-                window.portalDetail.request(window.selectedPortal).done(function() {
-                    setTimeout(function() {
-                        window.plugin.portalDetailsFull.showDetailsDialog(retryCount + 1);
-                    }, 300);
-                }).fail(function() {
-                    if (retryCount < 2) {
-                        setTimeout(function() {
-                            window.plugin.portalDetailsFull.showDetailsDialog(retryCount + 1);
-                        }, 500);
-                    } else {
-                        alert("Impossible de charger les details de ce portail.");
-                    }
-                });
-            } else {
-                alert("Impossible de charger les details de ce portail.");
-            }
+            alert('Unable to load this portal details');
             return;
         }
 
         var details = portal.options.data;
-        var portalName = details.title || "Portail inconnu";
+        var portalName = details.title || 'Unknown portal';
         var portalGuid = window.selectedPortal;
         var now = new Date();
         var mods = details.mods || [];
         var resonators = details.resonators || [];
 
-        failedPortals = {};
-        var key;
-        for (key in retryTimers) {
-            clearTimeout(retryTimers[key]);
-        }
-        retryTimers = {};
+        currentPortalData = {};
+        currentPortalData.portalName = portalName;
+        currentPortalData.portalGuid = portalGuid;
+        currentPortalData.mods = mods;
+        currentPortalData.resonators = resonators;
+        currentPortalData.linkedPortals = [];
 
-        currentPortalData = {
-            portalName: portalName,
-            portalGuid: portalGuid,
-            mods: mods,
-            resonators: resonators,
-            linkedPortals: []
-        };
-
-        var content = '<div id="portal-details-full-content" style="position:relative;">';
+        var content = '<div>';
         content += '<div style="display:flex; justify-content:space-between; align-items:center;">';
-        content += '<h3 style="margin:0;"><u><b>' + now.toLocaleString() + '</b></u></h3>';
-        content += '<button id="telegram-copy-btn" style="padding:4px 8px; font-size:14px; cursor:pointer; margin-left:10px;">Export Telegram</button>';
+        content += '<h3 style="margin:0;"><b>' + now.toLocaleString() + '</b></h3>';
+        content += '<button id="telegram-copy-btn" style="padding:6px 10px; font-size:13px; cursor:pointer;">Export to Telegram</button>';
         content += '</div>';
 
-        content += '<h3><b><a href="#" class="portal-link main-portal-link" data-guid="' + portalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + portalName + '</a></b></h3>';
+        content += '<h3><b>' + portalName + '</b></h3>';
         content += '<p><b>GUID:</b> ' + portalGuid + '</p>';
 
         content += '<h4><b>Mods</b></h4><ul>';
-        var hasMods = false;
         var i;
+        var hasMods = false;
         for (i = 0; i < mods.length; i++) {
-            if (mods[i] !== null) {
+            if (mods[i]) {
                 hasMods = true;
-                var modName = mods[i].name || "Mod inconnu";
-                var modOwner = mods[i].owner || "Inconnu";
-                var modRarity = mods[i].rarity || "Inconnue";
-                content += '<li><b>' + modName + '</b> (Proprietaire: ' + modOwner + ', Rarete: ' + modRarity + ')</li>';
+                var modName = mods[i].name || 'Unknown';
+                var modOwner = mods[i].owner || 'Unknown';
+                var modRarity = mods[i].rarity || 'Unknown';
+                content += '<li><b>' + modName + '</b> (Owner: ' + modOwner + ', Rarity: ' + modRarity + ')</li>';
             }
         }
         if (!hasMods) {
-            content += "<li>Aucun</li>";
+            content += '<li>None</li>';
         }
         content += '</ul>';
 
-        content += '<h4><b>Resonateurs</b></h4><ul>';
-        var hasResonators = false;
+        content += '<h4><b>Resonators</b></h4><ul>';
+        var hasRes = false;
         for (i = 0; i < resonators.length; i++) {
-            if (resonators[i] !== null) {
-                hasResonators = true;
-                var resLevel = resonators[i].level || "?";
-                var resOwner = resonators[i].owner || "Inconnu";
-                content += '<li><b>Niveau ' + resLevel + '</b> (Proprietaire: ' + resOwner + ')</li>';
+            if (resonators[i]) {
+                hasRes = true;
+                var resLevel = resonators[i].level || '?';
+                var resOwner = resonators[i].owner || 'Unknown';
+                content += '<li><b>Level ' + resLevel + '</b> (Owner: ' + resOwner + ')</li>';
             }
         }
-        if (!hasResonators) {
-            content += "<li>Aucun</li>";
+        if (!hasRes) {
+            content += '<li>None</li>';
         }
         content += '</ul>';
 
-        content += '<h4><b>Portails relies</b></h4><ul id="linked-portals-list">';
-
-        var linksFound = false;
-        var linkedPortalGuids = [];
+        content += '<h4><b>Linked portals</b></h4><ul>';
         var allLinks = window.links;
+        var linksFound = false;
         for (var linkId in allLinks) {
             var link = allLinks[linkId];
-            if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
+            var linkData = link.options.data;
+            if (linkData.oGuid === portalGuid || linkData.dGuid === portalGuid) {
                 linksFound = true;
-                var linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
-                linkedPortalGuids.push(linkedPortalGuid);
-                var liId = 'linked-portal-' + linkedPortalGuid.replace(/\./g, '-');
-
-                var linkedPortal = window.portals[linkedPortalGuid];
-                if (linkedPortal && linkedPortal.options.data && linkedPortal.options.data.title) {
+                var linkedGuid = (linkData.oGuid === portalGuid) ? linkData.dGuid : linkData.oGuid;
+                var linkedPortal = window.portals[linkedGuid];
+                if (linkedPortal && linkedPortal.options.data) {
+                    var linkedName = linkedPortal.options.data.title || 'Unknown';
                     currentPortalData.linkedPortals.push({
-                        name: linkedPortal.options.data.title,
-                        guid: linkedPortalGuid
+                        name: linkedName,
+                        guid: linkedGuid
                     });
-                    content += '<li id="' + liId + '"><b><a href="#" class="portal-link" data-guid="' + linkedPortalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + linkedPortal.options.data.title + '</a></b> (GUID: ' + linkedPortalGuid + ')</li>';
-                } else {
-                    currentPortalData.linkedPortals.push({
-                        name: "Chargement...",
-                        guid: linkedPortalGuid
-                    });
-                    content += '<li id="' + liId + '"><span style="color:red;">Chargement...</span> (GUID: ' + linkedPortalGuid + ')</li>';
+                    content += '<li><b>' + linkedName + '</b> (GUID: ' + linkedGuid + ')</li>';
                 }
             }
         }
-
         if (!linksFound) {
-            content += "<li>Aucun</li>";
+            content += '<li>None</li>';
         }
+        content += '</ul>';
 
-        content += '</ul></div>';
-
-        var isMobile = isMobileDevice();
+        content += '</div>';
 
         var buttons = [];
-        
-        if (!isMobile) {
-            buttons.push({
-                text: 'CSV',
-                click: function() {
-                    alert("Export CSV disponible sur desktop uniquement");
-                },
-                class: 'export-button-left'
-            });
-        }
-        
         buttons.push({
             text: 'OK',
             click: function() {
                 $(this).dialog('close');
-            },
-            class: 'ok-button-right'
+            }
         });
 
         window.dialog({
             title: 'Full Portal Details - v' + PLUGIN_VERSION,
             html: content,
-            width: isMobile ? 'auto' : 400,
-            id: 'portal-details-full-dialog',
+            width: isMobileDevice() ? 'auto' : 400,
             buttons: buttons
         });
 
         setTimeout(function() {
-            var telegramBtn = document.getElementById('telegram-copy-btn');
-            if (telegramBtn) {
-                telegramBtn.onclick = function() {
+            var btn = document.getElementById('telegram-copy-btn');
+            if (btn) {
+                btn.onclick = function() {
                     window.plugin.portalDetailsFull.exportToTelegram();
                 };
             }
-
-            var dialogButtons = $('.ui-dialog-buttonpane');
-            if (dialogButtons.length) {
-                dialogButtons.find('button.export-button-left').css({
-                    'float': 'left',
-                    'margin-right': '5px'
-                });
-                dialogButtons.find('button.ok-button-right').css({
-                    'float': 'right'
-                });
-            }
-
-            var allPortalLinks = document.querySelectorAll('.portal-link');
-            for (var idx = 0; idx < allPortalLinks.length; idx++) {
-                allPortalLinks[idx].onclick = function(e) {
-                    e.preventDefault();
-                    var guid = this.getAttribute('data-guid');
-                    window.plugin.portalDetailsFull.selectPortal(guid);
-                };
-            }
         }, 100);
-
-        for (i = 0; i < linkedPortalGuids.length; i++) {
-            var lpGuid = linkedPortalGuids[i];
-            var linkedPortal2 = window.portals[lpGuid];
-            if (!linkedPortal2 || !linkedPortal2.options.data || !linkedPortal2.options.data.title) {
-                window.plugin.portalDetailsFull.loadLinkedPortal(lpGuid, portalGuid);
-            }
-        }
     };
 
-    window.plugin.portalDetailsFull.addButtonToPortalDetails = function() {
+    window.plugin.portalDetailsFull.addButton = function() {
         if (!window.selectedPortal) {
             return;
         }
 
-        console.log("[Full Portal Details] Tentative ajout bouton");
+        console.log('[Full Portal Details] Adding button');
 
         $('#portal-details-full-btn').remove();
 
-        var portalDetails = $('#portaldetails');
-        
-        if (portalDetails.length === 0) {
-            console.warn("[Full Portal Details] portaldetails introuvable");
+        var container = $('#portaldetails');
+        if (container.length === 0) {
+            console.warn('[Full Portal Details] Container not found');
             return;
         }
 
-        console.log("[Full Portal Details] portaldetails trouve");
+        console.log('[Full Portal Details] Container found');
 
-        var button = $('<a></a>');
-        button.attr('id', 'portal-details-full-btn');
-        button.attr('href', '#');
-        button.attr('class', 'plugin-button');
-        button.text('Full Portal Details');
-        button.css('display', 'block');
-        button.css('padding', '8px 12px');
-        button.css('margin', '10px 5px');
-        button.css('background', '#3874ff');
-        button.css('color', 'white');
-        button.css('text-decoration', 'none');
-        button.css('border-radius', '4px');
-        button.css('text-align', 'center');
-        button.css('cursor', 'pointer');
-        button.css('font-weight', 'bold');
+        var btn = $('<a></a>');
+        btn.attr('id', 'portal-details-full-btn');
+        btn.attr('href', '#');
+        btn.text('Full Portal Details');
+        btn.css('display', 'block');
+        btn.css('padding', '8px 12px');
+        btn.css('margin', '10px 5px');
+        btn.css('background', '#3874ff');
+        btn.css('color', 'white');
+        btn.css('text-decoration', 'none');
+        btn.css('border-radius', '4px');
+        btn.css('text-align', 'center');
+        btn.css('cursor', 'pointer');
+        btn.css('font-weight', 'bold');
         
-        button.on('click', function(e) {
+        btn.on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log("[Full Portal Details] Bouton clique");
+            console.log('[Full Portal Details] Button clicked');
             window.plugin.portalDetailsFull.showDetailsDialog();
             return false;
         });
 
-        var inserted = false;
-
-        var linkDetails = portalDetails.find('.linkdetails');
-        if (linkDetails.length) {
-            console.log("[Full Portal Details] Ajout via linkdetails");
-            linkDetails.append(button);
-            inserted = true;
+        var linkDetails = container.find('.linkdetails');
+        if (linkDetails.length > 0) {
+            console.log('[Full Portal Details] Adding via .linkdetails');
+            linkDetails.append(btn);
+        } else {
+            console.log('[Full Portal Details] Adding directly to container');
+            container.append(btn);
         }
 
-        if (!inserted) {
-            console.log("[Full Portal Details] Ajout direct a portaldetails");
-            portalDetails.append(button);
-            inserted = true;
-        }
-
-        if (inserted) {
-            console.log("[Full Portal Details] Bouton ajoute");
-        }
+        console.log('[Full Portal Details] Button added successfully');
     };
 
     window.addHook('portalDetailsUpdated', function() {
-        console.log("[Full Portal Details] Hook declenche");
+        console.log('[Full Portal Details] Hook triggered');
         setTimeout(function() {
-            window.plugin.portalDetailsFull.addButtonToPortalDetails();
+            window.plugin.portalDetailsFull.addButton();
         }, 100);
     });
 
     var setup = function() {
-        console.log("[Full Portal Details] Setup");
-        
+        console.log('[Full Portal Details] Setup called');
         setTimeout(function() {
-            window.plugin.portalDetailsFull.addButtonToPortalDetails();
+            window.plugin.portalDetailsFull.addButton();
         }, 2000);
     };
 
@@ -468,7 +287,7 @@ function wrapper(plugin_info) {
         window.bootPlugins = [setup];
     }
 
-    console.log("[Full Portal Details] Plugin initialise v" + PLUGIN_VERSION);
+    console.log('[Full Portal Details] Plugin initialized v' + PLUGIN_VERSION);
 }
 
 if (window.iitcLoaded) {
