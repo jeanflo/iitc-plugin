@@ -2,11 +2,11 @@
 // @id             iitc-plugin-full-portal-details
 // @name           IITC plugin: Full Portal Details
 // @category       Portal Info
-// @version        3.1.2
+// @version        3.1.3
 // @namespace      https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.user.js
-// @description    3.1.2 Compatible Android! Affiche les mods, résonateurs et liens du portail. Exports CSV/TXT/Telegram.
+// @description    3.1.3 Compatible Android! Affiche les mods, résonateurs et liens du portail. Exports CSV/TXT/Telegram.
 // @match          https://intel.ingress.com/*
 // @match          http://intel.ingress.com/*
 // @grant          none
@@ -183,126 +183,183 @@ function wrapper(plugin_info) {
     }
   };
 
-  // EXPORT TELEGRAM
-    self.exportToTelegram = function() {
-        if (!currentPortalData) return;
+  // Helper: escape text for Telegram MarkdownV2
+  function escapeMdV2(text) {
+    if (text === null || typeof text === 'undefined') return '';
+    // convert to string
+    var s = String(text);
+    // escape backslash first
+    s = s.replace(/\\/g, '\\\\');
+    // escape Telegram special chars: _ * [ ] ( ) ~ ` > # + - = | { } . !
+    // Note: we will NOT use this function on plain URLs (they must remain unchanged)
+    return s.replace(/([_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])/g, '\\$1');
+  }
+
+  // EXPORT TELEGRAM (MarkdownV2 compatible, style 1: escape everything necessary)
+  self.exportToTelegram = function() {
+    if (!currentPortalData) return;
+    try {
+      var now = new Date().toLocaleString();
+      // Bold date/time
+      var out = '**' + escapeMdV2('📅 ' + now) + '**\n\n';
+      // Bold portal name (escaped)
+      out += '**' + escapeMdV2('📍 ' + (currentPortalData.portalName || 'Portail inconnu')) + '**\n';
+      // ID (escaped, not bold)
+      out += escapeMdV2('🆔 ' + (currentPortalData.portalGuid || '')) + '\n\n';
+
+      // Mods title in bold (we keep the literal "**🔧 Mods:**" to show bold; no need to escape the literal part)
+      out += '**🔧 Mods:**\n';
+      var mods = Array.isArray(currentPortalData.mods) ? currentPortalData.mods : [];
+      var filteredMods = mods.filter(function(m){ return m !== null && typeof m !== 'undefined'; });
+      if (filteredMods.length) {
+        filteredMods.forEach(function(mod) {
+          // Each piece escaped
+          var name = escapeMdV2(mod.name || 'Inconnu');
+          var owner = escapeMdV2(mod.owner || 'Inconnu');
+          var rarity = escapeMdV2(mod.rarity || 'Inconnue');
+          out += '  • ' + name + ' \\(' + escapeMdV2('Propriétaire: ' + owner) + ', ' + escapeMdV2('Rareté: ' + rarity) + '\\)\n';
+        });
+      } else {
+        out += '  • ' + escapeMdV2('Aucun') + '\n';
+      }
+
+      // Resonators title
+      out += '\n**⚡ Résonateurs:**\n';
+      var res = Array.isArray(currentPortalData.resonators) ? currentPortalData.resonators : [];
+      var filteredRes = res.filter(function(r){ return r !== null && typeof r !== 'undefined'; });
+      if (filteredRes.length) {
+        filteredRes.forEach(function(r) {
+          var level = escapeMdV2(r.level || '?');
+          var owner = escapeMdV2(r.owner || 'Inconnu');
+          out += '  • ' + escapeMdV2('Niveau ' + level) + ' \\(' + escapeMdV2('Propriétaire: ' + owner) + '\\)\n';
+        });
+      } else {
+        out += '  • ' + escapeMdV2('Aucun') + '\n';
+      }
+
+      // Linked portals title
+      out += '\n**🔗 Portails reliés:**\n';
+      var links = Array.isArray(currentPortalData.linkedPortals) ? currentPortalData.linkedPortals : [];
+      if (links.length) {
+        links.forEach(function(l) {
+          // display escaped name, then raw URL (do not escape URL)
+          var nameEsc = escapeMdV2(l.name || 'Inconnu');
+          out += '  • ' + nameEsc + '\n';
+          out += '    ' + 'https://link.ingress.com/portal/' + l.guid + '\n';
+        });
+      } else {
+        out += '  • ' + escapeMdV2('Aucun') + '\n';
+      }
+
+      var success = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(out).then(function() { success = true; showCopyMessage('✅ Données copiées'); })
+          .catch(function(err){ console.error('clipboard write failed', err); showCopyMessage('❌ Impossible de copier'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = out;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
         try {
-            var now = new Date().toLocaleString();
-            var out = '📅 ' + now + '\n\n';
-            out += '📍 ' + (currentPortalData.portalName || 'Portail inconnu') + '\n';
-            out += '🆔 ' + (currentPortalData.portalGuid || '') + '\n\n';
+          document.execCommand('copy');
+          success = true;
+          showCopyMessage('✅ Données copiées');
+        } catch (e) { showCopyMessage('❌ Impossible de copier'); }
+        setTimeout(function(){ if (ta.parentNode) ta.parentNode.removeChild(ta); }, 1000);
+      }
 
-            out += '🔧 Mods:\n';
-            var mods = Array.isArray(currentPortalData.mods) ? currentPortalData.mods : [];
-            var filteredMods = mods.filter(function(m){ return m !== null && typeof m !== 'undefined'; });
-            if (filteredMods.length) {
-                filteredMods.forEach(function(mod) {
-                    out += '  • ' + (mod.name || 'Inconnu') + ' (Propriétaire: ' + (mod.owner || 'Inconnu') + ', Rareté: ' + (mod.rarity || 'Inconnue') + ')\n';
-                });
-            } else { out += '  • Aucun\n'; }
+      // Fonction pour afficher le message sans décaler le bouton
+      function showCopyMessage(msg) {
+        var btn = document.getElementById('telegram-copy-btn');
+        if (!btn) return;
+        // parent position relatif
+        if (btn.parentNode) btn.parentNode.style.position = 'relative';
 
-            out += '\n⚡ Résonateurs:\n';
-            var res = Array.isArray(currentPortalData.resonators) ? currentPortalData.resonators : [];
-            var filteredRes = res.filter(function(r){ return r !== null && typeof r !== 'undefined'; });
-            if (filteredRes.length) {
-                filteredRes.forEach(function(r) {
-                    out += '  • Niveau ' + (r.level || '?') + ' (Propriétaire: ' + (r.owner || 'Inconnu') + ')\n';
-                });
-            } else { out += '  • Aucun\n'; }
+        var span = document.getElementById('telegram-copy-msg');
+        if (!span) {
+          span = document.createElement('span');
+          span.id = 'telegram-copy-msg';
+          span.style.position = 'absolute';
+          span.style.left = '60%';
+          span.style.top = '100%';
+          span.style.marginTop = '2px';
+          span.style.fontSize = '12px';
+          span.style.whiteSpace = 'nowrap';
+          btn.parentNode.appendChild(span);
+        }
+        span.textContent = msg;
+        span.style.color = msg.startsWith('✅') ? '#0f0' : '#f00';
+        setTimeout(function(){ span.textContent = ''; }, 3000);
+      }
 
-            out += '\n🔗 Portails reliés:\n';
-            var links = Array.isArray(currentPortalData.linkedPortals) ? currentPortalData.linkedPortals : [];
-            if (links.length) {
-                links.forEach(function(l) {
-                    out += '  • ' + (l.name || 'Inconnu') + '\n';
-                    out += '    https://link.ingress.com/portal/' + l.guid + '\n';
-                });
-            } else { out += '  • Aucun\n'; }
+    } catch (e) {
+      console.error('exportToTelegram error', e);
+      alert('Erreur export Telegram: ' + (e.message || e));
+    }
+  };
 
-            var success = false;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(out).then(function() { success = true; showCopyMessage('✅ Données copiées'); })
-                    .catch(function(err){ console.error('clipboard write failed', err); showCopyMessage('❌ Impossible de copier'); });
-            } else {
-                var ta = document.createElement('textarea');
-                ta.value = out;
-                ta.style.position = 'fixed';
-                ta.style.left = '-9999px';
-                document.body.appendChild(ta);
-                ta.select();
-                try {
-                    document.execCommand('copy');
-                    success = true;
-                    showCopyMessage('✅ Données copiées');
-                } catch (e) { showCopyMessage('❌ Impossible de copier'); }
-                setTimeout(function(){ if (ta.parentNode) ta.parentNode.removeChild(ta); }, 1000);
-            }
 
-            // Fonction pour afficher le message sans décaler le bouton
-            function showCopyMessage(msg) {
-                var btn = document.getElementById('telegram-copy-btn');
-                if (!btn) return;
-                // parent position relatif
-                if (btn.parentNode) btn.parentNode.style.position = 'relative';
+    self.loadLinkedPortal = function(linkedPortalGuid, portalGuid) {
+        try {
+            var liId = 'linked-portal-' + linkedPortalGuid.replace(/\./g, '-');
+            var li = document.getElementById(liId);
+            if (!li) return;
 
-                var span = document.getElementById('telegram-copy-msg');
-                if (!span) {
-                    span = document.createElement('span');
-                    span.id = 'telegram-copy-msg';
-                    span.style.position = 'absolute';
-                    span.style.left = '60%';
-                    span.style.top = '100%';
-                    span.style.marginTop = '2px';
-                    span.style.fontSize = '12px';
-                    span.style.whiteSpace = 'nowrap';
-                    btn.parentNode.appendChild(span);
+            if (!window.portalDetail || typeof window.portalDetail.request !== 'function') return;
+
+            window.portalDetail.request(linkedPortalGuid).done(function(data) {
+                if (li && data && data.title) {
+
+                    // Mise à jour de l'affichage
+                    li.innerHTML =
+                        '<b><a href="#" class="portal-link" data-guid="' +
+                        linkedPortalGuid +
+                        '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' +
+                        data.title +
+                        '</a></b> (GUID: ' + linkedPortalGuid + ')';
+
+                    failedPortals.delete(linkedPortalGuid);
+
+                    // Mise à jour dans currentPortalData !
+                    if (currentPortalData) {
+                        for (var i = 0; i < currentPortalData.linkedPortals.length; i++) {
+                            if (currentPortalData.linkedPortals[i].guid === linkedPortalGuid) {
+                                currentPortalData.linkedPortals[i].name = data.title;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Activation du lien
+                    var link = li.querySelector('.portal-link');
+                    if (link) {
+                        link.onclick = function(e) {
+                            e.preventDefault();
+                            self.selectPortal(linkedPortalGuid);
+                        };
+                    }
                 }
-                span.textContent = msg;
-                span.style.color = msg.startsWith('✅') ? '#0f0' : '#f00';
-                setTimeout(function(){ span.textContent = ''; }, 3000);
-            }
+            }).fail(function() {
+                if (li) {
+                    li.innerHTML = '<span style="color:red;">Échec du chargement</span> (GUID: ' + linkedPortalGuid + ')';
+                    failedPortals.add(linkedPortalGuid);
+
+                    if (retryTimers[linkedPortalGuid])
+                        clearTimeout(retryTimers[linkedPortalGuid]);
+
+                    retryTimers[linkedPortalGuid] = setTimeout(function() {
+                        self.loadLinkedPortal(linkedPortalGuid, portalGuid);
+                    }, 2000);
+                }
+            });
 
         } catch (e) {
-            console.error('exportToTelegram error', e);
-            alert('Erreur export Telegram: ' + (e.message || e));
+            console.error('loadLinkedPortal error', e);
         }
     };
 
-
-  self.loadLinkedPortal = function(linkedPortalGuid, portalGuid) {
-    try {
-      var liId = 'linked-portal-' + linkedPortalGuid.replace(/\./g, '-');
-      var li = document.getElementById(liId);
-      if (!li) return;
-      if (!window.portalDetail || typeof window.portalDetail.request !== 'function') return;
-      window.portalDetail.request(linkedPortalGuid).done(function(data) {
-        if (li && data && data.title) {
-          li.innerHTML = '<b><a href="#" class="portal-link" data-guid="' + linkedPortalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + data.title + '</a></b> (GUID: ' + linkedPortalGuid + ')';
-          failedPortals.delete(linkedPortalGuid);
-          if (currentPortalData) {
-            var idx = -1;
-            for (var i=0;iurrentPortalData.linkedPortals.length;i++) {
-              if (currentPortalData.linkedPortals[i].guid === linkedPortalGuid) { idx = i; break; }
-            }
-            if (idx !== -1) currentPortalData.linkedPortals[idx].name = data.title;
-          }
-          var link = li.querySelector('.portal-link');
-          if (link) {
-            link.onclick = function(e) { e.preventDefault(); self.selectPortal(linkedPortalGuid); };
-          }
-        }
-      }).fail(function() {
-        if (li) {
-          li.innerHTML = '<span style="color:r:red;">Échec du chargement</span> (GUID: ' + linkedPortalGuid + ')';
-          failedPortals.add(linkedPortalGuid);
-          if (retryTimers[linkedPortalGuid]) clearTimeout(retryTimers[linkedPortalGuid]);
-          retryTimers[linkedPortalGuid] = setTimeout(function(){ self.loadLinkedPortal(linkedPortalGuid, portalGuid); }, 2000);
-        }
-      });
-    } catch (e) {
-      console.error('loadLinkedPortal error', e);
-    }
-  };
 
   self.showDetailsDialog = function(retryCount) {
     if (!retryCount) retryCount = 0;
