@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.6.7
+// @version    1.6.8
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 1.6.7 Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
+// @description 1.6.8 Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -571,24 +571,30 @@ function wrapper(plugin_info) {
         });
     };
 
-    window.plugin.portalDetailsFull.addToSidebar = function() {
+    window.plugin.portalDetailsFull.addToSidebar = function(maxRetries = 10) {
         if (!window.selectedPortal) return;
         const portal = window.portals[window.selectedPortal];
         if (!portal) return;
 
         let container = document.querySelector(".linkdetails");
         if (!container) {
-            console.warn("Conteneur .linkdetails introuvable, tentative dans 500ms");
-            setTimeout(window.plugin.portalDetailsFull.addToSidebar, 500);
-            return;
-        }
+      if (maxRetries > 0) {
+        console.warn(`.linkdetails not found, retrying in 500 ms, retries left: ${maxRetries}`);
+        setTimeout(() => {
+          window.plugin.portalDetailsFull.addToSidebar(maxRetries - 1);
+      }, 500);
+    } else {
+        console.error(".linkdetails not found - giving up adding sidebar button");
+    }
+      return;
+  }
 
         let aside = document.getElementById("portal-details-full-aside");
         if (!aside) {
-            aside = document.createElement("aside");
-            aside.id = "portal-details-full-aside";
-            container.appendChild(aside);
-        }
+      aside = document.createElement("aside");
+      aside.id = "portal-details-full-aside";
+      container.appendChild(aside);
+  }
 
         if (document.getElementById("portal-details-full-btn")) return;
 
@@ -598,15 +604,22 @@ function wrapper(plugin_info) {
         button.href = "#";
         button.className = "plugin-button";
 
+        // Forcer visibilité
         button.style.display = "block";
         button.style.visibility = "visible";
 
         button.onclick = function(event) {
-            event.preventDefault();
-            window.plugin.portalDetailsFull.showDetailsDialog();
-        };
+      event.preventDefault();
+      try {
+        window.plugin.portalDetailsFull.showDetailsDialog();
+    } catch (e) {
+        console.error("Erreur lors de l'ouverture du dialogue Full Portal Details:", e);
+        alert("Erreur lors de l'ouverture du dialogue. Veuillez réessayer.");
+    }
+  };
         aside.appendChild(button);
     };
+
 
     window.addHook('portalDetailsUpdated', () => {
         setTimeout(() => {
