@@ -2,15 +2,13 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    2.4.1
+// @version    2.4.2
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
-// @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
-// @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 2.4.1 Compatible Android! Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
-// @include        https://*.ingress.com/*
-// @include        http://*.ingress.com/*
-// @match          https://*.ingress.com/*
-// @match          http://*.ingress.com/*
+// @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.meta.js
+// @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.user.js
+// @description 2.4.2 Compatible Android! Affiche les mods, résonateurs et liens du portail sélectionné.
+// @match       https://intel.ingress.com/*
+// @match       http://intel.ingress.com/*
 // @grant       none
 // ==/UserScript==
 
