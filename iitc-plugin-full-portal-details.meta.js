@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
-// @category   Info
+// @category   Portal Info
 // @version    3.1.1
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.meta.js
