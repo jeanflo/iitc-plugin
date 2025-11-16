@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.7.3
+// @version    1.7.4
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 1.7.3 Fix apostrophes - Compatible Android ES5. Affiche les mods, resonateurs et portails relies. Export Telegram integre.
+// @description 1.7.4 Fix Android emoji - Compatible Android ES5. Affiche les mods, resonateurs et portails relies. Export Telegram integre.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -15,7 +15,7 @@
 // ==/UserScript==
 
 function wrapper(plugin_info) {
-    var PLUGIN_VERSION = "1.7.3";
+    var PLUGIN_VERSION = "1.7.4";
     var PLUGIN_NAME = "Full Portal Details";
 
     console.log("[Full Portal Details] Initialisation v" + PLUGIN_VERSION);
@@ -23,7 +23,6 @@ function wrapper(plugin_info) {
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
 
-    // Charger ExcelJS
     if (!window.ExcelJS) {
         var script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
@@ -76,7 +75,7 @@ function wrapper(plugin_info) {
                 'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝',
                 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧',
                 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
-                'é': '𝗲́', 'è': '𝗲̀', 'ê': '𝗲̂', 'à': '𝗮̀', 'ù': '𝘂̀', 'ç': '𝗰̧'
+                'e': '𝗲', 'a': '𝗮', 'u': '𝘂', 'c': '𝗰'
             };
             return text.split('').map(function(char) {
                 return boldMap[char] || char;
@@ -84,12 +83,12 @@ function wrapper(plugin_info) {
         }
 
         var csvContent = '';
-        csvContent += '"𝗗𝗮𝘁𝗲";"' + toBold(now) + '"\n';
-        csvContent += '"𝗣𝗼𝗿𝘁𝗮𝗶𝗹";"' + portalName + '"\n';
-        csvContent += '"𝗚𝗨𝗜𝗗";"' + portalGuid + '"\n\n';
+        csvContent += '"Date";"' + toBold(now) + '"\n';
+        csvContent += '"Portail";"' + portalName + '"\n';
+        csvContent += '"GUID";"' + portalGuid + '"\n\n';
 
-        csvContent += '"𝗠𝗢𝗗𝗦"\n';
-        csvContent += '"𝗡𝗼𝗺";"𝗣𝗿𝗼𝗽𝗿𝗶𝗲́𝘁𝗮𝗶𝗿𝗲";"𝗥𝗮𝗿𝗲𝘁é"\n';
+        csvContent += '"MODS"\n';
+        csvContent += '"Nom";"Proprietaire";"Rarete"\n';
         var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
         if (filteredMods.length) {
             filteredMods.forEach(function(mod) {
@@ -100,8 +99,8 @@ function wrapper(plugin_info) {
         }
         csvContent += '\n';
 
-        csvContent += '"𝗥𝗘́𝗦𝗢𝗡𝗔𝗧𝗘𝗨𝗥𝗦"\n';
-        csvContent += '"𝗡𝗶𝘃𝗲𝗮𝘂";"𝗣𝗿𝗼𝗽𝗿𝗶𝗲́𝘁𝗮𝗶𝗿𝗲"\n';
+        csvContent += '"RESONATEURS"\n';
+        csvContent += '"Niveau";"Proprietaire"\n';
         var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
         if (filteredRes.length) {
             filteredRes.forEach(function(res) {
@@ -112,8 +111,8 @@ function wrapper(plugin_info) {
         }
         csvContent += '\n';
 
-        csvContent += '"𝗣𝗢𝗥𝗧𝗔𝗜𝗟𝗦 𝗥𝗘𝗟𝗜𝗘́𝗦"\n';
-        csvContent += '"𝗡𝗼𝗺 𝗱𝘂 𝗽𝗼𝗿𝘁𝗮𝗶𝗹";"𝗚𝗨𝗜𝗗"\n';
+        csvContent += '"PORTAILS RELIES"\n';
+        csvContent += '"Nom du portail";"GUID"\n';
         if (currentPortalData.linkedPortals.length) {
             currentPortalData.linkedPortals.forEach(function(link) {
                 csvContent += '"' + link.name + '";"' + link.guid + '"\n';
@@ -134,36 +133,36 @@ function wrapper(plugin_info) {
 
         var now = new Date().toLocaleString();
         var txtContent = now + '\n\n';
-        txtContent += '📍 ' + currentPortalData.portalName + '\n';
+        txtContent += '[Portail] ' + currentPortalData.portalName + '\n';
         txtContent += 'GUID: ' + currentPortalData.portalGuid + '\n\n';
 
-        txtContent += '🔧 Mods:\n';
+        txtContent += '[Mods]\n';
         var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
         if (filteredMods.length) {
             filteredMods.forEach(function(mod) {
-                txtContent += '  • ' + (mod.name || 'Inconnu') + ' (Propriétaire: ' + (mod.owner || 'Inconnu') + ', Rareté: ' + (mod.rarity || 'Inconnue') + ')\n';
+                txtContent += '  - ' + (mod.name || 'Inconnu') + ' (Proprietaire: ' + (mod.owner || 'Inconnu') + ', Rarete: ' + (mod.rarity || 'Inconnue') + ')\n';
             });
         } else {
-            txtContent += '  • Aucun\n';
+            txtContent += '  - Aucun\n';
         }
 
-        txtContent += '\n⚡ Résonateurs:\n';
+        txtContent += '\n[Resonateurs]\n';
         var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
         if (filteredRes.length) {
             filteredRes.forEach(function(res) {
-                txtContent += '  • Niveau ' + (res.level || '?') + ' (Propriétaire: ' + (res.owner || 'Inconnu') + ')\n';
+                txtContent += '  - Niveau ' + (res.level || '?') + ' (Proprietaire: ' + (res.owner || 'Inconnu') + ')\n';
             });
         } else {
-            txtContent += '  • Aucun\n';
+            txtContent += '  - Aucun\n';
         }
 
-        txtContent += '\n🔗 Portails reliés:\n';
+        txtContent += '\n[Portails relies]\n';
         if (currentPortalData.linkedPortals.length) {
             currentPortalData.linkedPortals.forEach(function(link) {
-                txtContent += '  • ' + link.name + ' (' + link.guid + ')\n';
+                txtContent += '  - ' + link.name + ' (' + link.guid + ')\n';
             });
         } else {
-            txtContent += '  • Aucun\n';
+            txtContent += '  - Aucun\n';
         }
 
         var blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
@@ -177,50 +176,50 @@ function wrapper(plugin_info) {
         if (!currentPortalData) return;
 
         var now = new Date().toLocaleString();
-        var telegramContent = '📅 ' + now + '\n\n';
-        telegramContent += '📍 **' + currentPortalData.portalName + '**\n';
-        telegramContent += '🆔 `' + currentPortalData.portalGuid + '`\n\n';
+        var telegramContent = '[Date] ' + now + '\n\n';
+        telegramContent += '[Portail] **' + currentPortalData.portalName + '**\n';
+        telegramContent += '[GUID] `' + currentPortalData.portalGuid + '`\n\n';
 
-        telegramContent += '🔧 **Mods:**\n';
+        telegramContent += '**Mods:**\n';
         var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
         if (filteredMods.length) {
             filteredMods.forEach(function(mod) {
-                telegramContent += '  • **' + (mod.name || 'Inconnu') + '** (' + (mod.owner || 'Inconnu') + ', ' + (mod.rarity || 'Inconnue') + ')\n';
+                telegramContent += '  - **' + (mod.name || 'Inconnu') + '** (' + (mod.owner || 'Inconnu') + ', ' + (mod.rarity || 'Inconnue') + ')\n';
             });
         } else {
-            telegramContent += '  • Aucun\n';
+            telegramContent += '  - Aucun\n';
         }
 
-        telegramContent += '\n⚡ **Résonateurs:**\n';
+        telegramContent += '\n**Resonateurs:**\n';
         var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
         if (filteredRes.length) {
             filteredRes.forEach(function(res) {
-                telegramContent += '  • **Niveau ' + (res.level || '?') + '** (' + (res.owner || 'Inconnu') + ')\n';
+                telegramContent += '  - **Niveau ' + (res.level || '?') + '** (' + (res.owner || 'Inconnu') + ')\n';
             });
         } else {
-            telegramContent += '  • Aucun\n';
+            telegramContent += '  - Aucun\n';
         }
 
         function escapeMarkdown(text) {
             return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
         }
 
-        telegramContent += '\n🔗 **Portails reliés:**\n';
+        telegramContent += '\n**Portails relies:**\n';
         if (currentPortalData.linkedPortals.length) {
             currentPortalData.linkedPortals.forEach(function(link) {
                 var escapedName = escapeMarkdown(link.name);
                 var url = 'https://link.ingress.com/portal/' + link.guid;
-                telegramContent += '  • ' + escapedName + '\n' + url + '\n\n';
+                telegramContent += '  - ' + escapedName + '\n' + url + '\n\n';
             });
         } else {
-            telegramContent += '  • Aucun\n';
+            telegramContent += '  - Aucun\n';
         }
 
         navigator.clipboard.writeText(telegramContent).then(function() {
-            alert("✅ Donnees copiees au format Telegram !\nCollez directement dans votre groupe Telegram.");
+            alert("OK - Donnees copiees au format Telegram !\nCollez directement dans votre groupe Telegram.");
         }).catch(function(err) {
             console.error("[Full Portal Details] Erreur lors de la copie : ", err);
-            alert("❌ Impossible de copier dans le presse-papiers.");
+            alert("ERREUR - Impossible de copier dans le presse-papiers.");
         });
     };
 
@@ -228,7 +227,7 @@ function wrapper(plugin_info) {
         if (!currentPortalData) return;
 
         if (typeof ExcelJS === 'undefined') {
-            alert("⏳ Chargement de la bibliotheque Excel en cours...\nReessayez dans 2 secondes.");
+            alert("ATTENTE - Chargement de la bibliotheque Excel en cours...\nReessayez dans 2 secondes.");
             return;
         }
 
@@ -335,7 +334,7 @@ function wrapper(plugin_info) {
             link.click();
         }).catch(function(err) {
             console.error('[Full Portal Details] Erreur export Excel:', err);
-            alert('❌ Erreur lors de l\'export Excel');
+            alert('ERREUR lors de l\'export Excel');
         });
     };
 
@@ -432,7 +431,7 @@ function wrapper(plugin_info) {
         var content = '<div id="portal-details-full-content" style="position:relative;">';
         content += '<div style="display:flex; justify-content:space-between; align-items:center;">';
         content += '<h3 style="margin:0;"><u><b>' + now.toLocaleString() + '</b></u></h3>';
-        content += '<button id="telegram-copy-btn" style="padding:4px 8px; font-size:14px; cursor:pointer; margin-left:10px;">✈️ Export To Telegram</button>';
+        content += '<button id="telegram-copy-btn" style="padding:4px 8px; font-size:14px; cursor:pointer; margin-left:10px;">Export Telegram</button>';
         content += '</div>';
 
         content += '<h3><b><a href="#" class="portal-link main-portal-link" data-guid="' + portalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + portalName + '</a></b></h3>';
@@ -484,17 +483,17 @@ function wrapper(plugin_info) {
 
         var buttons = [
             {
-                text: '📊 CSV',
+                text: 'CSV',
                 click: function() { window.plugin.portalDetailsFull.exportToCSV(); },
                 class: 'export-button-left'
             },
             {
-                text: '📄 TXT',
+                text: 'TXT',
                 click: function() { window.plugin.portalDetailsFull.exportToTXT(); },
                 class: 'export-button-left'
             },
             {
-                text: '📗 Excel',
+                text: 'Excel',
                 click: function() { window.plugin.portalDetailsFull.exportToExcel(); },
                 class: 'export-button-left'
             },
@@ -507,7 +506,7 @@ function wrapper(plugin_info) {
 
         if (isMobile) {
             buttons = buttons.filter(function(b) {
-                return b.text !== '📊 CSV' && b.text !== '📄 TXT' && b.text !== '📗 Excel';
+                return b.text !== 'CSV' && b.text !== 'TXT' && b.text !== 'Excel';
             });
         }
 
@@ -555,16 +554,13 @@ function wrapper(plugin_info) {
         });
     };
 
-    // AJOUT DU BOUTON - Compatible Android
     window.plugin.portalDetailsFull.addButtonToPortalDetails = function() {
         if (!window.selectedPortal) return;
 
         console.log("[Full Portal Details] Tentative d'ajout du bouton");
 
-        // Supprimer l'ancien bouton s'il existe
         $('#portal-details-full-btn').remove();
 
-        // Essayer plusieurs emplacements possibles
         var portalDetails = $('#portaldetails');
         
         if (portalDetails.length === 0) {
@@ -574,7 +570,6 @@ function wrapper(plugin_info) {
 
         console.log("[Full Portal Details] #portaldetails trouve");
 
-        // Creer le bouton avec jQuery
         var button = $('<a>')
             .attr({
                 'id': 'portal-details-full-btn',
@@ -602,10 +597,8 @@ function wrapper(plugin_info) {
                 return false;
             });
 
-        // Tenter plusieurs methodes d'insertion
         var inserted = false;
 
-        // Methode 1: Chercher .linkdetails dans portaldetails
         var linkDetails = portalDetails.find('.linkdetails');
         if (linkDetails.length) {
             console.log("[Full Portal Details] Ajout via .linkdetails");
@@ -613,7 +606,6 @@ function wrapper(plugin_info) {
             inserted = true;
         }
 
-        // Methode 2: Ajouter directement a portaldetails
         if (!inserted) {
             console.log("[Full Portal Details] Ajout direct a #portaldetails");
             portalDetails.append(button);
@@ -625,7 +617,6 @@ function wrapper(plugin_info) {
         }
     };
 
-    // Hook sur portalDetailsUpdated - methode standard IITC
     window.addHook('portalDetailsUpdated', function() {
         console.log("[Full Portal Details] Hook portalDetailsUpdated declenche");
         setTimeout(function() {
@@ -633,11 +624,9 @@ function wrapper(plugin_info) {
         }, 100);
     });
 
-    // Setup pour IITC
     var setup = function() {
         console.log("[Full Portal Details] Setup appele");
         
-        // Attendre que le DOM soit pret
         setTimeout(function() {
             window.plugin.portalDetailsFull.addButtonToPortalDetails();
         }, 2000);
@@ -654,7 +643,6 @@ function wrapper(plugin_info) {
     console.log("[Full Portal Details] Plugin initialise v" + PLUGIN_VERSION);
 }
 
-// Initialisation
 if (window.iitcLoaded) {
     wrapper();
 } else {
