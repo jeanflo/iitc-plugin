@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    3.0.1
+// @version    3.0.2
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.user.js
-// @description 3.0.1 Compatible Android! Affiche les mods, résonateurs et liens du portail sélectionné. Exports CSV/TXT/Excel/Telegram.
+// @description 3.0.2 Compatible Android! Affiche les mods, résonateurs et liens du portail sélectionné. Exports CSV/TXT/Excel/Telegram.
 // @match       https://intel.ingress.com/*
 // @match       http://intel.ingress.com/*
 // @grant       none
@@ -187,74 +187,101 @@ function wrapper(plugin_info) {
     }
   };
 
-  // TELEGRAM (copy formatted text to clipboard)
-  self.exportToTelegram = function() {
-    if (!currentPortalData) return;
-    try {
-      var now = new Date().toLocaleString();
-      var out = '📅 ' + now + '\n\n';
-      out += '📍 **' + (currentPortalData.portalName || 'Portail inconnu') + '**\n';
-      out += '🆔 `' + (currentPortalData.portalGuid || '') + '`\n\n';
-      out += '🔧 **Mods:**\n';
-      var mods = Array.isArray(currentPortalData.mods) ? currentPortalData.mods : [];
-      var filteredMods = mods.filter(function(m){ return m !== null && typeof m !== 'undefined'; });
-      if (filteredMods.length) {
-        filteredMods.forEach(function(mod) {
-          out += '  • **' + (mod.name || 'Inconnu') + '** (' + (mod.owner || 'Inconnu') + ', ' + (mod.rarity || 'Inconnue') + ')\n';
-        });
-      } else {
-        out += '  • Aucun\n';
-      }
-      out += '\n⚡ **Résonateurs:**\n';
-      var res = Array.isArray(currentPortalData.resonators) ? currentPortalData.resonators : [];
-      var filteredRes = res.filter(function(r){ return r !== null && typeof r !== 'undefined'; });
-      if (filteredRes.length) {
-        filteredRes.forEach(function(r) {
-          out += '  • **Niveau ' + (r.level || '?') + '** (' + (r.owner || 'Inconnu') + ')\n';
-        });
-      } else {
-        out += '  • Aucun\n';
-      }
-      out += '\n🔗 **Portails reliés:**\n';
-      var links = Array.isArray(currentPortalData.linkedPortals) ? currentPortalData.linkedPortals : [];
-      if (links.length) {
-        links.forEach(function(l) {
-          // escape for markdown-lite: simple escaping of backticks and a few chars
-          var name = (l.name || '').replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
-          out += '  • ' + name + '\nhttps://link.ingress.com/portal/' + l.guid + '\n\n';
-        });
-      } else {
-        out += '  • Aucun\n';
-      }
-
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(out).then(function() {
-          alert('✅ Données copiées au format Telegram — collez dans Telegram.');
-        }).catch(function(err){
-          console.error('clipboard write failed', err);
-          alert('Impossible de copier dans le presse-papiers (voir console).');
-        });
-      } else {
-        // fallback: create temporary textarea
-        var ta = document.createElement('textarea');
-        ta.value = out;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
+    // TELEGRAM (copy formatted text to clipboard)
+    self.exportToTelegram = function() {
+        if (!currentPortalData) return;
         try {
-          document.execCommand('copy');
-          alert('✅ Données copiées (fallback).');
+            var now = new Date().toLocaleString();
+            var out = '📅 ' + now + '\n\n';
+            out += '📍 ' + (currentPortalData.portalName || 'Portail inconnu') + '\n';
+            out += '🆔 ' + (currentPortalData.portalGuid || '') + '\n\n';
+
+            out += '🔧 Mods:\n';
+            var mods = Array.isArray(currentPortalData.mods) ? currentPortalData.mods : [];
+            var filteredMods = mods.filter(function(m){ return m !== null && typeof m !== 'undefined'; });
+            if (filteredMods.length) {
+                filteredMods.forEach(function(mod) {
+                    out += '  • ' + (mod.name || 'Inconnu') + ' (Propriétaire: ' + (mod.owner || 'Inconnu') + ', Rareté: ' + (mod.rarity || 'Inconnue') + ')\n';
+                });
+            } else {
+                out += '  • Aucun\n';
+            }
+
+            out += '\n⚡ Résonateurs:\n';
+            var res = Array.isArray(currentPortalData.resonators) ? currentPortalData.resonators : [];
+            var filteredRes = res.filter(function(r){ return r !== null && typeof r !== 'undefined'; });
+            if (filteredRes.length) {
+                filteredRes.forEach(function(r) {
+                    out += '  • Niveau ' + (r.level || '?') + ' (Propriétaire: ' + (r.owner || 'Inconnu') + ')\n';
+                });
+            } else {
+                out += '  • Aucun\n';
+            }
+
+            out += '\n🔗 Portails reliés:\n';
+            var links = Array.isArray(currentPortalData.linkedPortals) ? currentPortalData.linkedPortals : [];
+            if (links.length) {
+                links.forEach(function(l) {
+                    out += '  • ' + (l.name || 'Inconnu') + '\n';
+                    out += '    https://link.ingress.com/portal/' + l.guid + '\n';
+                });
+            } else {
+                out += '  • Aucun\n';
+            }
+
+            // Copie dans le presse-papier
+            var success = false;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(out).then(function() { success = true; showCopyMessage('✅ Données copiées'); })
+                    .catch(function(err){ console.error('clipboard write failed', err); showCopyMessage('❌ Impossible de copier'); });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = out;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    success = true;
+                    showCopyMessage('✅ Données copiées');
+                } catch (e) {
+                    showCopyMessage('❌ Impossible de copier');
+                }
+                setTimeout(function(){ if (ta.parentNode) ta.parentNode.removeChild(ta); }, 1000);
+            }
+
+            // Fonction pour afficher un message sous le bouton
+            function showCopyMessage(msg) {
+                var btn = document.getElementById('telegram-copy-btn');
+                if (!btn) return;
+                // parent position relatif
+                if (btn.parentNode) btn.parentNode.style.position = 'relative';
+                var span = document.getElementById('telegram-copy-msg');
+                if (!span) {
+                    span = document.createElement('span');
+                    span.id = 'telegram-copy-msg';
+                    span.style.position = 'absolute';
+                    span.style.left = '50%';
+                    span.style.top = '100%';
+                    span.style.marginTop = '2px';
+                    span.style.color = '#0f0'; // vert pour succès
+                    span.style.fontSize = '12px';
+                    btn.parentNode.appendChild(span);
+                }
+                span.textContent = msg;
+                span.style.color = msg.startsWith('✅') ? '#0f0' : '#f00';
+                // disparait après 3 secondes
+                setTimeout(function(){ span.textContent = ''; }, 3000);
+            }
+
         } catch (e) {
-          alert('Impossible de copier automatiquement, utilisez copier manuellement.');
+            console.error('exportToTelegram error', e);
+            alert('Erreur export Telegram: ' + (e.message || e));
         }
-        setTimeout(function(){ if (ta.parentNode) ta.parentNode.removeChild(ta); }, 1000);
-      }
-    } catch (e) {
-      console.error('exportToTelegram error', e);
-      alert('Erreur export Telegram: ' + (e.message || e));
-    }
-  };
+    };
+
+
 
   // EXCEL export via ExcelJS (if present)
   self.exportToExcel = function() {
@@ -537,45 +564,34 @@ function wrapper(plugin_info) {
     }
   };
 
-  // Add button to sidebar inside an <aside>
-  self.addToSidebar = function() {
-    try {
-      if (!window.selectedPortal) return;
-      if (!document.getElementById) return;
-      var container = document.getElementById('portaldetails');
-      if (!container) return;
-      var existing = document.getElementById('portal-details-full-aside');
-      if (!existing) {
-        var aside = document.createElement('aside');
-        aside.id = 'portal-details-full-aside';
-        // find linkdetails
-        var linkDetails = container.querySelector && container.querySelector('.linkdetails');
-        if (linkDetails) linkDetails.appendChild(aside);
-        else container.appendChild(aside);
-      }
-      if (document.getElementById('portal-details-full-btn')) return;
-      var button = document.createElement('a');
-      button.id = 'portal-details-full-btn';
-      button.href = '#';
-      button.textContent = 'Full Portal Details';
-      button.className = 'plugin-button';
-      button.style.display = 'block';
-      button.style.padding = '8px 12px';
-      button.style.margin = '10px 5px';
-      button.style.background = '#3874ff';
-      button.style.color = 'white';
-      button.style.textDecoration = 'none';
-      button.style.borderRadius = '4px';
-      button.style.textAlign = 'center';
-      button.style.cursor = 'pointer';
-      button.style.fontWeight = 'bold';
-      button.onclick = function(e){ e.preventDefault(); e.stopPropagation(); self.showDetailsDialog(); return false; };
-      var aside2 = document.getElementById('portal-details-full-aside');
-      if (aside2) aside2.appendChild(button);
-    } catch (e) {
-      console.error('addToSidebar error', e);
-    }
-  };
+    // Add button to sidebar inside an <aside>
+    self.addToSidebar = function() {
+        try {
+            if (!window.selectedPortal) return;
+            if (!document.getElementById) return;
+            var container = document.getElementById('portaldetails');
+            if (!container) return;
+            var existing = document.getElementById('portal-details-full-aside');
+            if (!existing) {
+                var aside = document.createElement('aside');
+                aside.id = 'portal-details-full-aside';
+                // find linkdetails
+                var linkDetails = container.querySelector && container.querySelector('.linkdetails');
+                if (linkDetails) linkDetails.appendChild(aside);
+                else container.appendChild(aside);
+            }
+            if (document.getElementById('portal-details-full-btn')) return;
+            var button = document.createElement('a');
+            button.id = 'portal-details-full-btn';
+            button.textContent = 'Full Portal Details';
+            button.className = 'plugin-portal-details-full-button'; // Classe CSS au lieu de styles inline
+            button.onclick = function(e){ e.preventDefault(); e.stopPropagation(); self.showDetailsDialog(); return false; };
+            var aside2 = document.getElementById('portal-details-full-aside');
+            if (aside2) aside2.appendChild(button);
+        } catch (e) {
+            console.error('addToSidebar error', e);
+        }
+    };
 
   // hook setup
   self.setup = function() {
