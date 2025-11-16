@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.7.0
+// @version    1.7.1
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 1.7.0 Compatible Android! Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
+// @description 1.7.1 Compatible Android - Utilise portalDetailsUpdated. Affiche les mods, résonateurs et portails reliés. Export Telegram intégré.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -14,37 +14,16 @@
 // @grant       none
 // ==/UserScript==
 
-var info = {};
-if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
-  info.script = {
-    version: GM_info.script.version,
-    name: GM_info.script.name,
-    description: GM_info.script.description
-  };
-} else {
-  info.script = {
-    version: "1.7.0",
-    name: "Full Portal Details",
-    description: "Compatible Android"
-  };
-}
-
 function wrapper(plugin_info) {
-    if (plugin_info?.script?.version) {
-        info.script.version = plugin_info.script.version;
-        info.script.name = plugin_info.script.name || info.script.name;
-        info.script.description = plugin_info.script.description || info.script.description;
-    }
+    const PLUGIN_VERSION = "1.7.1";
+    const PLUGIN_NAME = "Full Portal Details";
 
-    const PLUGIN_VERSION = info.script.version;
-    const PLUGIN_NAME = info.script.name || "Full Portal Details";
-
-    console.log("[Full Portal Details] Version détectée :", PLUGIN_VERSION);
+    console.log("[Full Portal Details] Initialisation v" + PLUGIN_VERSION);
 
     if (typeof window.plugin !== 'function') window.plugin = function() {};
     window.plugin.portalDetailsFull = function() {};
 
-    // Charger ExcelJS si pas déjà présent
+    // Charger ExcelJS
     if (!window.ExcelJS) {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
@@ -55,14 +34,13 @@ function wrapper(plugin_info) {
     let retryTimers = {};
     let currentPortalData = null;
 
-    // Détection améliorée mobile
     const isMobileDevice = function() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                window.useAndroidPanes !== undefined ||
                (typeof window.isSmartphone === 'function' && window.isSmartphone());
     };
 
-    console.log("[Full Portal Details] Mobile détecté:", isMobileDevice());
+    console.log("[Full Portal Details] Mobile:", isMobileDevice());
 
     window.plugin.portalDetailsFull.selectPortal = function(guid) {
         let portal = window.portals[guid];
@@ -575,144 +553,109 @@ function wrapper(plugin_info) {
         });
     };
 
-    // CORRECTION PRINCIPALE POUR ANDROID : Multiples sélecteurs et meilleure gestion
-    window.plugin.portalDetailsFull.addToSidebar = function(maxRetries = 15) {
-        if (!window.selectedPortal) {
-            console.log("[Full Portal Details] Pas de portail sélectionné");
+    // NOUVELLE APPROCHE : Utiliser jQuery directement sur #portaldetails
+    window.plugin.portalDetailsFull.addButtonToPortalDetails = function() {
+        if (!window.selectedPortal) return;
+
+        console.log("[Full Portal Details] Tentative d'ajout du bouton");
+
+        // Supprimer l'ancien bouton s'il existe
+        $('#portal-details-full-btn').remove();
+
+        // Essayer plusieurs emplacements possibles
+        let portalDetails = $('#portaldetails');
+
+        if (portalDetails.length === 0) {
+            console.warn("[Full Portal Details] #portaldetails introuvable");
             return;
         }
 
-        const portal = window.portals[window.selectedPortal];
-        if (!portal) {
-            console.log("[Full Portal Details] Portail introuvable");
-            return;
-        }
+        console.log("[Full Portal Details] #portaldetails trouvé");
 
-        // Essayer plusieurs sélecteurs possibles
-        let container = document.querySelector(".linkdetails") ||
-                       document.querySelector("#portaldetails") ||
-                       document.querySelector(".portal-details") ||
-                       document.getElementById("sidebar");
-
-        if (!container) {
-            if (maxRetries > 0) {
-                console.warn(`[Full Portal Details] Container non trouvé, nouvel essai (${maxRetries} restants)`);
-                setTimeout(() => {
-                    window.plugin.portalDetailsFull.addToSidebar(maxRetries - 1);
-                }, 500);
-            } else {
-                console.error("[Full Portal Details] Container introuvable après tous les essais");
-                // Sur mobile, essayer d'ajouter un bouton via le menu toolbox
-                window.plugin.portalDetailsFull.addToToolbox();
-            }
-            return;
-        }
-
-        console.log("[Full Portal Details] Container trouvé:", container.className);
-
-        let aside = document.getElementById("portal-details-full-aside");
-        if (!aside) {
-            aside = document.createElement("aside");
-            aside.id = "portal-details-full-aside";
-            aside.style.cssText = "display: block !important; visibility: visible !important; margin: 10px 0;";
-            container.appendChild(aside);
-        }
-
-        if (document.getElementById("portal-details-full-btn")) {
-            console.log("[Full Portal Details] Bouton déjà présent");
-            return;
-        }
-
-        const button = document.createElement("a");
-        button.id = "portal-details-full-btn";
-        button.textContent = "Full Portal Details";
-        button.href = "#";
-        button.className = "plugin-button";
-
-        // Style amélioré pour Android
-        button.style.cssText = `
-            display: block !important;
-            visibility: visible !important;
-            padding: 8px 12px;
-            margin: 5px 0;
-            background: #3874ff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: bold;
-        `;
-
-        button.onclick = function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            console.log("[Full Portal Details] Bouton cliqué");
-            try {
+        // Créer le bouton avec jQuery
+        let button = $('<a>')
+            .attr({
+                'id': 'portal-details-full-btn',
+                'href': '#',
+                'class': 'plugin-button'
+            })
+            .text('Full Portal Details')
+            .css({
+                'display': 'block',
+                'padding': '8px 12px',
+                'margin': '10px 5px',
+                'background': '#3874ff',
+                'color': 'white',
+                'text-decoration': 'none',
+                'border-radius': '4px',
+                'text-align': 'center',
+                'cursor': 'pointer',
+                'font-weight': 'bold'
+            })
+            .on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("[Full Portal Details] Bouton cliqué");
                 window.plugin.portalDetailsFull.showDetailsDialog();
-            } catch (e) {
-                console.error("[Full Portal Details] Erreur:", e);
-                alert("Erreur lors de l'ouverture. Veuillez réessayer.");
-            }
-            return false;
-        };
-
-        aside.appendChild(button);
-        console.log("[Full Portal Details] Bouton ajouté avec succès");
-    };
-
-    // Méthode alternative pour mobile via le menu toolbox
-    window.plugin.portalDetailsFull.addToToolbox = function() {
-        console.log("[Full Portal Details] Tentative d'ajout au toolbox");
-
-        if (typeof window.toolbox === 'undefined' || !window.toolbox) {
-            console.warn("[Full Portal Details] Toolbox non disponible");
-            return;
-        }
-
-        try {
-            window.toolbox.addButton({
-                label: 'Full Portal Details',
-                title: 'Afficher les détails complets du portail',
-                action: window.plugin.portalDetailsFull.showDetailsDialog
+                return false;
             });
-            console.log("[Full Portal Details] Ajouté au toolbox avec succès");
-        } catch(e) {
-            console.error("[Full Portal Details] Erreur ajout toolbox:", e);
+
+        // Tenter plusieurs méthodes d'insertion
+        let inserted = false;
+
+        // Méthode 1: Chercher .linkdetails dans portaldetails
+        let linkDetails = portalDetails.find('.linkdetails');
+        if (linkDetails.length) {
+            console.log("[Full Portal Details] Ajout via .linkdetails");
+            linkDetails.append(button);
+            inserted = true;
+        }
+
+        // Méthode 2: Ajouter directement à portaldetails
+        if (!inserted) {
+            console.log("[Full Portal Details] Ajout direct à #portaldetails");
+            portalDetails.append(button);
+            inserted = true;
+        }
+
+        if (inserted) {
+            console.log("[Full Portal Details] Bouton ajouté avec succès");
         }
     };
 
-    // Hook principal
-    window.addHook('portalDetailsUpdated', () => {
+    // Hook sur portalDetailsUpdated - méthode standard IITC
+    window.addHook('portalDetailsUpdated', function() {
         console.log("[Full Portal Details] Hook portalDetailsUpdated déclenché");
-        setTimeout(() => {
-            window.plugin.portalDetailsFull.addToSidebar();
-        }, 300);
+        setTimeout(function() {
+            window.plugin.portalDetailsFull.addButtonToPortalDetails();
+        }, 100);
     });
 
-    // Hook supplémentaire pour mobile
-    window.addHook('portalSelected', () => {
-        console.log("[Full Portal Details] Hook portalSelected déclenché");
-        setTimeout(() => {
-            window.plugin.portalDetailsFull.addToSidebar();
-        }, 500);
-    });
+    // Setup pour IITC
+    let setup = function() {
+        console.log("[Full Portal Details] Setup appelé");
 
-    // Initialisation au chargement
-    if (typeof window.bootPlugins === 'undefined') {
-        setTimeout(() => {
-            console.log("[Full Portal Details] Initialisation manuelle");
-            window.plugin.portalDetailsFull.addToSidebar();
+        // Attendre que le DOM soit prêt
+        setTimeout(function() {
+            window.plugin.portalDetailsFull.addButtonToPortalDetails();
         }, 2000);
+    };
+
+    if (window.iitcLoaded) {
+        setup();
+    } else if (window.bootPlugins) {
+        window.bootPlugins.push(setup);
+    } else {
+        window.bootPlugins = [setup];
     }
 
     console.log("[Full Portal Details] Plugin initialisé v" + PLUGIN_VERSION);
 }
 
-// Setup pour IITC
-var setup = wrapper;
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = setup;
+// Initialisation
+if (window.iitcLoaded) {
+    wrapper();
+} else {
+    if (!window.bootPlugins) window.bootPlugins = [];
+    window.bootPlugins.push(wrapper);
 }
-
-wrapper();
