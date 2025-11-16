@@ -2,11 +2,11 @@
 // @id             iitc-plugin-full-portal-details
 // @name           IITC plugin: Full Portal Details
 // @category       Portal Info
-// @version        3.1.1
+// @version        3.1.2
 // @namespace      https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-full-portal-details.user.js
-// @description    3.1.1 Compatible Android! Affiche les mods, résonateurs et liens du portail. Exports CSV/TXT/Telegram.
+// @description    3.1.2 Compatible Android! Affiche les mods, résonateurs et liens du portail. Exports CSV/TXT/Telegram.
 // @match          https://intel.ingress.com/*
 // @match          http://intel.ingress.com/*
 // @grant          none
@@ -184,110 +184,90 @@ function wrapper(plugin_info) {
   };
 
   // EXPORT TELEGRAM
-  self.exportToTelegram = function() {
-    if (!currentPortalData) return;
-    try {
-      var now = new Date().toLocaleString();
-      var out = '📅 ' + now + '\n\n';
-      out += '📍 ' + (currentPortalData.portalName || 'Portail inconnu') + '\n';
-      out += '🆔 ' + (currentPortalData.portalGuid || '') + '\n\n';
-
-      out += '🔧 Mods:\n';
-      var mods = Array.isArray(currentPortalData.mods) ? currentPortalData.mods : [];
-      var filteredMods = mods.filter(function(m){ return m !== null && typeof m !== 'undefined'; });
-      if (filteredMods.length) {
-        filteredMods.forEach(function(mod) {
-          out += '  • ' + (mod.name || 'Inconnu') + ' (Propriétaire: ' + (mod.owner || 'Inconnu') + ', Rareté: ' + (mod.rarity || 'Inconnue') + ')\n';
-        });
-      } else {
-        out += '  • Aucun\n';
-      }
-
-      out += '\n⚡ Résonateurs:\n';
-      var res = Array.isArray(currentPortalData.resonators) ? currentPortalData.resonators : [];
-      var filteredRes = res.filter(function(r){ return r !== null && typeof r !== 'undefined'; });
-      if (filteredRes.length) {
-        filteredRes.forEach(function(r) {
-          out += '  • Niveau ' + (r.level || '?') + ' (Propriétaire: ' + (r.owner || 'Inconnu') + ')\n';
-        });
-      } else {
-        out += '  • Aucun\n';
-      }
-
-      out += '\n🔗 Portails reliés:\n';
-      var links = Array.isArray(currentPortalData.linkedPortals) ? currentPortalData.linkedPortals : [];
-      if (links.length) {
-        links.forEach(function(l) {
-          out += '  • ' + (l.name || 'Inconnu') + '\n';
-          out += '    https://link.ingress.com/portal/' + l.guid + '\n';
-        });
-      } else {
-        out += '  • Aucun\n';
-      }
-
-      // Fonction d'affichage du message
-      var showMessage = function(text, isSuccess) {
-        var oldMsg = document.getElementById('telegram-export-message');
-        if (oldMsg) oldMsg.parentNode.removeChild(oldMsg);
-
-        var msg = document.createElement('div');
-        msg.id = 'telegram-export-message';
-        msg.textContent = text;
-        msg.style.cssText = 'margin-top:10px; padding:8px; border-radius:3px; font-size:13px; text-align:center;';
-
-        if (isSuccess) {
-          msg.style.background = 'rgba(46, 204, 113, 0.2)';
-          msg.style.color = '#2ecc71';
-          msg.style.border = '1px solid #2ecc71';
-        } else {
-          msg.style.background = 'rgba(231, 76, 60, 0.2)';
-          msg.style.color = '#e74c3c';
-          msg.style.border = '1px solid #e74c3c';
-        }
-
-        var btn = document.getElementById('telegram-copy-btn');
-        if (btn && btn.parentNode) {
-          btn.parentNode.insertBefore(msg, btn.nextSibling);
-
-          setTimeout(function() {
-            if (msg.parentNode) {
-              msg.style.transition = 'opacity 0.5s';
-              msg.style.opacity = '0';
-              setTimeout(function() {
-                if (msg.parentNode) msg.parentNode.removeChild(msg);
-              }, 500);
-            }
-          }, 3000);
-        }
-      };
-
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(out).then(function() {
-          showMessage('✅ Données copiées ! Collez dans Telegram.', true);
-        }).catch(function(err) {
-          console.error('clipboard write failed', err);
-          showMessage('❌ Erreur de copie', false);
-        });
-      } else {
-        var ta = document.createElement('textarea');
-        ta.value = out;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
+    self.exportToTelegram = function() {
+        if (!currentPortalData) return;
         try {
-          document.execCommand('copy');
-          showMessage('✅ Données copiées (fallback)', true);
+            var now = new Date().toLocaleString();
+            var out = '📅 ' + now + '\n\n';
+            out += '📍 ' + (currentPortalData.portalName || 'Portail inconnu') + '\n';
+            out += '🆔 ' + (currentPortalData.portalGuid || '') + '\n\n';
+
+            out += '🔧 Mods:\n';
+            var mods = Array.isArray(currentPortalData.mods) ? currentPortalData.mods : [];
+            var filteredMods = mods.filter(function(m){ return m !== null && typeof m !== 'undefined'; });
+            if (filteredMods.length) {
+                filteredMods.forEach(function(mod) {
+                    out += '  • ' + (mod.name || 'Inconnu') + ' (Propriétaire: ' + (mod.owner || 'Inconnu') + ', Rareté: ' + (mod.rarity || 'Inconnue') + ')\n';
+                });
+            } else { out += '  • Aucun\n'; }
+
+            out += '\n⚡ Résonateurs:\n';
+            var res = Array.isArray(currentPortalData.resonators) ? currentPortalData.resonators : [];
+            var filteredRes = res.filter(function(r){ return r !== null && typeof r !== 'undefined'; });
+            if (filteredRes.length) {
+                filteredRes.forEach(function(r) {
+                    out += '  • Niveau ' + (r.level || '?') + ' (Propriétaire: ' + (r.owner || 'Inconnu') + ')\n';
+                });
+            } else { out += '  • Aucun\n'; }
+
+            out += '\n🔗 Portails reliés:\n';
+            var links = Array.isArray(currentPortalData.linkedPortals) ? currentPortalData.linkedPortals : [];
+            if (links.length) {
+                links.forEach(function(l) {
+                    out += '  • ' + (l.name || 'Inconnu') + '\n';
+                    out += '    https://link.ingress.com/portal/' + l.guid + '\n';
+                });
+            } else { out += '  • Aucun\n'; }
+
+            var success = false;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(out).then(function() { success = true; showCopyMessage('✅ Données copiées'); })
+                    .catch(function(err){ console.error('clipboard write failed', err); showCopyMessage('❌ Impossible de copier'); });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = out;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    success = true;
+                    showCopyMessage('✅ Données copiées');
+                } catch (e) { showCopyMessage('❌ Impossible de copier'); }
+                setTimeout(function(){ if (ta.parentNode) ta.parentNode.removeChild(ta); }, 1000);
+            }
+
+            // Fonction pour afficher le message sans décaler le bouton
+            function showCopyMessage(msg) {
+                var btn = document.getElementById('telegram-copy-btn');
+                if (!btn) return;
+                // parent position relatif
+                if (btn.parentNode) btn.parentNode.style.position = 'relative';
+
+                var span = document.getElementById('telegram-copy-msg');
+                if (!span) {
+                    span = document.createElement('span');
+                    span.id = 'telegram-copy-msg';
+                    span.style.position = 'absolute';
+                    span.style.left = '60%';
+                    span.style.top = '100%';
+                    span.style.marginTop = '2px';
+                    span.style.fontSize = '12px';
+                    span.style.whiteSpace = 'nowrap';
+                    btn.parentNode.appendChild(span);
+                }
+                span.textContent = msg;
+                span.style.color = msg.startsWith('✅') ? '#0f0' : '#f00';
+                setTimeout(function(){ span.textContent = ''; }, 3000);
+            }
+
         } catch (e) {
-          showMessage('❌ Copie manuelle nécessaire', false);
+            console.error('exportToTelegram error', e);
+            alert('Erreur export Telegram: ' + (e.message || e));
         }
-        setTimeout(function(){ if (ta.parentNode) ta.parentNode.removeChild(ta); }, 1000);
-      }
-    } catch (e) {
-      console.error('exportToTelegram error', e);
-      alert('Erreur export Telegram: ' + (e.message || e));
-    }
-  };
+    };
+
 
   self.loadLinkedPortal = function(linkedPortalGuid, portalGuid) {
     try {
