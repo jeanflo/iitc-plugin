@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.7.4
+// @version    1.7.5
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 1.7.4 Fix Android emoji - Compatible Android ES5. Affiche les mods, resonateurs et portails relies. Export Telegram integre.
+// @description 1.7.5 Ultra compatible Android ES5. Affiche les details complets du portail.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -15,12 +15,14 @@
 // ==/UserScript==
 
 function wrapper(plugin_info) {
-    var PLUGIN_VERSION = "1.7.4";
+    var PLUGIN_VERSION = "1.7.5";
     var PLUGIN_NAME = "Full Portal Details";
 
     console.log("[Full Portal Details] Initialisation v" + PLUGIN_VERSION);
 
-    if (typeof window.plugin !== 'function') window.plugin = function() {};
+    if (typeof window.plugin !== 'function') {
+        window.plugin = function() {};
+    }
     window.plugin.portalDetailsFull = function() {};
 
     if (!window.ExcelJS) {
@@ -29,14 +31,22 @@ function wrapper(plugin_info) {
         document.head.appendChild(script);
     }
 
-    var failedPortals = new Set();
+    var failedPortals = {};
     var retryTimers = {};
     var currentPortalData = null;
 
     var isMobileDevice = function() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-               window.useAndroidPanes !== undefined ||
-               (typeof window.isSmartphone === 'function' && window.isSmartphone());
+        var ua = navigator.userAgent;
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+            return true;
+        }
+        if (window.useAndroidPanes !== undefined) {
+            return true;
+        }
+        if (typeof window.isSmartphone === 'function' && window.isSmartphone()) {
+            return true;
+        }
+        return false;
     };
 
     console.log("[Full Portal Details] Mobile:", isMobileDevice());
@@ -58,122 +68,10 @@ function wrapper(plugin_info) {
         }
     };
 
-    window.plugin.portalDetailsFull.exportToCSV = function() {
-        if (!currentPortalData) return;
-
-        var BOM = '\uFEFF';
-        var now = new Date().toLocaleString();
-        var portalName = currentPortalData.portalName;
-        var portalGuid = currentPortalData.portalGuid;
-
-        function toBold(text) {
-            var boldMap = {
-                '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰', '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵',
-                'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶', 'j': '𝗷',
-                'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁',
-                'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
-                'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝',
-                'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧',
-                'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
-                'e': '𝗲', 'a': '𝗮', 'u': '𝘂', 'c': '𝗰'
-            };
-            return text.split('').map(function(char) {
-                return boldMap[char] || char;
-            }).join('');
-        }
-
-        var csvContent = '';
-        csvContent += '"Date";"' + toBold(now) + '"\n';
-        csvContent += '"Portail";"' + portalName + '"\n';
-        csvContent += '"GUID";"' + portalGuid + '"\n\n';
-
-        csvContent += '"MODS"\n';
-        csvContent += '"Nom";"Proprietaire";"Rarete"\n';
-        var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
-        if (filteredMods.length) {
-            filteredMods.forEach(function(mod) {
-                csvContent += '"' + (mod.name || 'Inconnu') + '";"' + (mod.owner || 'Inconnu') + '";"' + (mod.rarity || 'Inconnue') + '"\n';
-            });
-        } else {
-            csvContent += '"Aucun";"";"";\n';
-        }
-        csvContent += '\n';
-
-        csvContent += '"RESONATEURS"\n';
-        csvContent += '"Niveau";"Proprietaire"\n';
-        var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
-        if (filteredRes.length) {
-            filteredRes.forEach(function(res) {
-                csvContent += '"Niveau ' + (res.level || '?') + '";"' + (res.owner || 'Inconnu') + '"\n';
-            });
-        } else {
-            csvContent += '"Aucun";"";\n';
-        }
-        csvContent += '\n';
-
-        csvContent += '"PORTAILS RELIES"\n';
-        csvContent += '"Nom du portail";"GUID"\n';
-        if (currentPortalData.linkedPortals.length) {
-            currentPortalData.linkedPortals.forEach(function(link) {
-                csvContent += '"' + link.name + '";"' + link.guid + '"\n';
-            });
-        } else {
-            csvContent += '"Aucun";"";\n';
-        }
-
-        var blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = portalName.replace(/[^a-z0-9]/gi, '_') + '_details.csv';
-        link.click();
-    };
-
-    window.plugin.portalDetailsFull.exportToTXT = function() {
-        if (!currentPortalData) return;
-
-        var now = new Date().toLocaleString();
-        var txtContent = now + '\n\n';
-        txtContent += '[Portail] ' + currentPortalData.portalName + '\n';
-        txtContent += 'GUID: ' + currentPortalData.portalGuid + '\n\n';
-
-        txtContent += '[Mods]\n';
-        var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
-        if (filteredMods.length) {
-            filteredMods.forEach(function(mod) {
-                txtContent += '  - ' + (mod.name || 'Inconnu') + ' (Proprietaire: ' + (mod.owner || 'Inconnu') + ', Rarete: ' + (mod.rarity || 'Inconnue') + ')\n';
-            });
-        } else {
-            txtContent += '  - Aucun\n';
-        }
-
-        txtContent += '\n[Resonateurs]\n';
-        var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
-        if (filteredRes.length) {
-            filteredRes.forEach(function(res) {
-                txtContent += '  - Niveau ' + (res.level || '?') + ' (Proprietaire: ' + (res.owner || 'Inconnu') + ')\n';
-            });
-        } else {
-            txtContent += '  - Aucun\n';
-        }
-
-        txtContent += '\n[Portails relies]\n';
-        if (currentPortalData.linkedPortals.length) {
-            currentPortalData.linkedPortals.forEach(function(link) {
-                txtContent += '  - ' + link.name + ' (' + link.guid + ')\n';
-            });
-        } else {
-            txtContent += '  - Aucun\n';
-        }
-
-        var blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = currentPortalData.portalName.replace(/[^a-z0-9]/gi, '_') + '_details.txt';
-        link.click();
-    };
-
     window.plugin.portalDetailsFull.exportToTelegram = function() {
-        if (!currentPortalData) return;
+        if (!currentPortalData) {
+            return;
+        }
 
         var now = new Date().toLocaleString();
         var telegramContent = '[Date] ' + now + '\n\n';
@@ -181,22 +79,34 @@ function wrapper(plugin_info) {
         telegramContent += '[GUID] `' + currentPortalData.portalGuid + '`\n\n';
 
         telegramContent += '**Mods:**\n';
-        var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
-        if (filteredMods.length) {
-            filteredMods.forEach(function(mod) {
-                telegramContent += '  - **' + (mod.name || 'Inconnu') + '** (' + (mod.owner || 'Inconnu') + ', ' + (mod.rarity || 'Inconnue') + ')\n';
-            });
-        } else {
+        var mods = currentPortalData.mods;
+        var hasMods = false;
+        var i;
+        for (i = 0; i < mods.length; i++) {
+            if (mods[i] !== null) {
+                hasMods = true;
+                var modName = mods[i].name || 'Inconnu';
+                var modOwner = mods[i].owner || 'Inconnu';
+                var modRarity = mods[i].rarity || 'Inconnue';
+                telegramContent += '  - **' + modName + '** (' + modOwner + ', ' + modRarity + ')\n';
+            }
+        }
+        if (!hasMods) {
             telegramContent += '  - Aucun\n';
         }
 
         telegramContent += '\n**Resonateurs:**\n';
-        var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
-        if (filteredRes.length) {
-            filteredRes.forEach(function(res) {
-                telegramContent += '  - **Niveau ' + (res.level || '?') + '** (' + (res.owner || 'Inconnu') + ')\n';
-            });
-        } else {
+        var resonators = currentPortalData.resonators;
+        var hasResonators = false;
+        for (i = 0; i < resonators.length; i++) {
+            if (resonators[i] !== null) {
+                hasResonators = true;
+                var resLevel = resonators[i].level || '?';
+                var resOwner = resonators[i].owner || 'Inconnu';
+                telegramContent += '  - **Niveau ' + resLevel + '** (' + resOwner + ')\n';
+            }
+        }
+        if (!hasResonators) {
             telegramContent += '  - Aucun\n';
         }
 
@@ -205,153 +115,46 @@ function wrapper(plugin_info) {
         }
 
         telegramContent += '\n**Portails relies:**\n';
-        if (currentPortalData.linkedPortals.length) {
-            currentPortalData.linkedPortals.forEach(function(link) {
+        var linkedPortals = currentPortalData.linkedPortals;
+        if (linkedPortals.length > 0) {
+            for (i = 0; i < linkedPortals.length; i++) {
+                var link = linkedPortals[i];
                 var escapedName = escapeMarkdown(link.name);
                 var url = 'https://link.ingress.com/portal/' + link.guid;
                 telegramContent += '  - ' + escapedName + '\n' + url + '\n\n';
-            });
+            }
         } else {
             telegramContent += '  - Aucun\n';
         }
 
         navigator.clipboard.writeText(telegramContent).then(function() {
-            alert("OK - Donnees copiees au format Telegram !\nCollez directement dans votre groupe Telegram.");
+            alert("OK - Donnees copiees au format Telegram !");
         }).catch(function(err) {
-            console.error("[Full Portal Details] Erreur lors de la copie : ", err);
+            console.error("[Full Portal Details] Erreur copie:", err);
             alert("ERREUR - Impossible de copier dans le presse-papiers.");
-        });
-    };
-
-    window.plugin.portalDetailsFull.exportToExcel = function() {
-        if (!currentPortalData) return;
-
-        if (typeof ExcelJS === 'undefined') {
-            alert("ATTENTE - Chargement de la bibliotheque Excel en cours...\nReessayez dans 2 secondes.");
-            return;
-        }
-
-        var now = new Date().toLocaleString();
-        var portalName = currentPortalData.portalName;
-        var portalGuid = currentPortalData.portalGuid;
-
-        var workbook = new ExcelJS.Workbook();
-        var worksheet = workbook.addWorksheet('Details Portail');
-
-        var headerStyle = {
-            font: { bold: true, size: 12 },
-            alignment: { horizontal: 'center', vertical: 'middle' },
-            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } }
-        };
-
-        var titleStyle = {
-            font: { bold: true, size: 14 },
-            alignment: { horizontal: 'center', vertical: 'middle' },
-            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } }
-        };
-
-        var labelStyle = {
-            font: { bold: true, size: 11 },
-            alignment: { horizontal: 'center', vertical: 'middle' }
-        };
-
-        var row = worksheet.addRow(['Date', now]);
-        row.getCell(1).style = labelStyle;
-        row.getCell(2).style = { alignment: { horizontal: 'center' }, font: { bold: true } };
-
-        row = worksheet.addRow(['Portail', portalName]);
-        row.getCell(1).style = labelStyle;
-        row.getCell(2).style = { alignment: { horizontal: 'center' } };
-
-        row = worksheet.addRow(['GUID', portalGuid]);
-        row.getCell(1).style = labelStyle;
-        row.getCell(2).style = { alignment: { horizontal: 'center' } };
-
-        worksheet.addRow([]);
-
-        row = worksheet.addRow(['MODS']);
-        worksheet.mergeCells('A' + row.number + ':C' + row.number);
-        row.getCell(1).style = titleStyle;
-
-        row = worksheet.addRow(['Nom', 'Proprietaire', 'Rarete']);
-        row.eachCell(function(cell) { cell.style = headerStyle; });
-
-        var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
-        if (filteredMods.length) {
-            filteredMods.forEach(function(mod) {
-                worksheet.addRow([mod.name || 'Inconnu', mod.owner || 'Inconnu', mod.rarity || 'Inconnue']);
-            });
-        } else {
-            worksheet.addRow(['Aucun', '', '']);
-        }
-
-        worksheet.addRow([]);
-
-        row = worksheet.addRow(['RESONATEURS']);
-        worksheet.mergeCells('A' + row.number + ':B' + row.number);
-        row.getCell(1).style = titleStyle;
-
-        row = worksheet.addRow(['Niveau', 'Proprietaire']);
-        row.eachCell(function(cell) { cell.style = headerStyle; });
-
-        var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
-        if (filteredRes.length) {
-            filteredRes.forEach(function(res) {
-                worksheet.addRow(['Niveau ' + (res.level || '?'), res.owner || 'Inconnu']);
-            });
-        } else {
-            worksheet.addRow(['Aucun', '']);
-        }
-
-        worksheet.addRow([]);
-
-        row = worksheet.addRow(['PORTAILS RELIES']);
-        worksheet.mergeCells('A' + row.number + ':B' + row.number);
-        row.getCell(1).style = titleStyle;
-
-        row = worksheet.addRow(['Nom du portail', 'GUID']);
-        row.eachCell(function(cell) { cell.style = headerStyle; });
-
-        if (currentPortalData.linkedPortals.length) {
-            currentPortalData.linkedPortals.forEach(function(link) {
-                worksheet.addRow([link.name, link.guid]);
-            });
-        } else {
-            worksheet.addRow(['Aucun', '']);
-        }
-
-        worksheet.columns = [
-            { width: 45 },
-            { width: 45 },
-            { width: 20 }
-        ];
-
-        workbook.xlsx.writeBuffer().then(function(buffer) {
-            var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = portalName.replace(/[^a-z0-9]/gi, '_') + '_details.xlsx';
-            link.click();
-        }).catch(function(err) {
-            console.error('[Full Portal Details] Erreur export Excel:', err);
-            alert('ERREUR lors de l\'export Excel');
         });
     };
 
     window.plugin.portalDetailsFull.loadLinkedPortal = function(linkedPortalGuid, portalGuid) {
         var liId = 'linked-portal-' + linkedPortalGuid.replace(/\./g, '-');
         var li = document.getElementById(liId);
-        if (!li) return;
+        if (!li) {
+            return;
+        }
 
         window.portalDetail.request(linkedPortalGuid).done(function(data) {
             if (li && data && data.title) {
                 li.innerHTML = '<b><a href="#" class="portal-link" data-guid="' + linkedPortalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + data.title + '</a></b> (GUID: ' + linkedPortalGuid + ')';
-                failedPortals.delete(linkedPortalGuid);
+                delete failedPortals[linkedPortalGuid];
 
                 if (currentPortalData) {
-                    var linkIndex = currentPortalData.linkedPortals.findIndex(function(l) { return l.guid === linkedPortalGuid; });
-                    if (linkIndex !== -1) {
-                        currentPortalData.linkedPortals[linkIndex].name = data.title;
+                    var linkedList = currentPortalData.linkedPortals;
+                    var j;
+                    for (j = 0; j < linkedList.length; j++) {
+                        if (linkedList[j].guid === linkedPortalGuid) {
+                            linkedList[j].name = data.title;
+                            break;
+                        }
                     }
                 }
 
@@ -366,9 +169,11 @@ function wrapper(plugin_info) {
         }).fail(function() {
             if (li) {
                 li.innerHTML = '<span style="color:red;">Echec du chargement</span> (GUID: ' + linkedPortalGuid + ')';
-                failedPortals.add(linkedPortalGuid);
+                failedPortals[linkedPortalGuid] = true;
 
-                if (retryTimers[linkedPortalGuid]) clearTimeout(retryTimers[linkedPortalGuid]);
+                if (retryTimers[linkedPortalGuid]) {
+                    clearTimeout(retryTimers[linkedPortalGuid]);
+                }
                 retryTimers[linkedPortalGuid] = setTimeout(function() {
                     window.plugin.portalDetailsFull.loadLinkedPortal(linkedPortalGuid, portalGuid);
                 }, 2000);
@@ -377,7 +182,9 @@ function wrapper(plugin_info) {
     };
 
     window.plugin.portalDetailsFull.showDetailsDialog = function(retryCount) {
-        if (!retryCount) retryCount = 0;
+        if (!retryCount) {
+            retryCount = 0;
+        }
 
         if (!window.selectedPortal) {
             console.log("[Full Portal Details] Aucun portail selectionne");
@@ -400,11 +207,11 @@ function wrapper(plugin_info) {
                             window.plugin.portalDetailsFull.showDetailsDialog(retryCount + 1);
                         }, 500);
                     } else {
-                        alert("Impossible de charger les details de ce portail. Veuillez reessayer.");
+                        alert("Impossible de charger les details de ce portail.");
                     }
                 });
             } else {
-                alert("Impossible de charger les details de ce portail apres plusieurs tentatives.");
+                alert("Impossible de charger les details de ce portail.");
             }
             return;
         }
@@ -416,8 +223,11 @@ function wrapper(plugin_info) {
         var mods = details.mods || [];
         var resonators = details.resonators || [];
 
-        failedPortals.clear();
-        Object.keys(retryTimers).forEach(function(key) { clearTimeout(retryTimers[key]); });
+        failedPortals = {};
+        var key;
+        for (key in retryTimers) {
+            clearTimeout(retryTimers[key]);
+        }
         retryTimers = {};
 
         currentPortalData = {
@@ -438,24 +248,44 @@ function wrapper(plugin_info) {
         content += '<p><b>GUID:</b> ' + portalGuid + '</p>';
 
         content += '<h4><b>Mods</b></h4><ul>';
-        var filteredMods = mods.filter(function(mod) { return mod !== null; });
-        content += filteredMods.length
-            ? filteredMods.map(function(mod) { return '<li><b>' + (mod.name || "Mod inconnu") + '</b> (Proprietaire: ' + (mod.owner || "Inconnu") + ', Rarete: ' + (mod.rarity || "Inconnue") + ')</li>'; }).join('')
-            : "<li>Aucun</li>";
+        var hasMods = false;
+        var i;
+        for (i = 0; i < mods.length; i++) {
+            if (mods[i] !== null) {
+                hasMods = true;
+                var modName = mods[i].name || "Mod inconnu";
+                var modOwner = mods[i].owner || "Inconnu";
+                var modRarity = mods[i].rarity || "Inconnue";
+                content += '<li><b>' + modName + '</b> (Proprietaire: ' + modOwner + ', Rarete: ' + modRarity + ')</li>';
+            }
+        }
+        if (!hasMods) {
+            content += "<li>Aucun</li>";
+        }
         content += '</ul>';
 
         content += '<h4><b>Resonateurs</b></h4><ul>';
-        var filteredRes = resonators.filter(function(res) { return res !== null; });
-        content += filteredRes.length
-            ? filteredRes.map(function(res) { return '<li><b>Niveau ' + (res.level || "?") + '</b> (Proprietaire: ' + (res.owner || "Inconnu") + ')</li>'; }).join('')
-            : "<li>Aucun</li>";
+        var hasResonators = false;
+        for (i = 0; i < resonators.length; i++) {
+            if (resonators[i] !== null) {
+                hasResonators = true;
+                var resLevel = resonators[i].level || "?";
+                var resOwner = resonators[i].owner || "Inconnu";
+                content += '<li><b>Niveau ' + resLevel + '</b> (Proprietaire: ' + resOwner + ')</li>';
+            }
+        }
+        if (!hasResonators) {
+            content += "<li>Aucun</li>";
+        }
         content += '</ul>';
 
         content += '<h4><b>Portails relies</b></h4><ul id="linked-portals-list">';
 
         var linksFound = false;
         var linkedPortalGuids = [];
-        Object.values(window.links).forEach(function(link) {
+        var allLinks = window.links;
+        for (var linkId in allLinks) {
+            var link = allLinks[linkId];
             if (link.options.data.oGuid === portalGuid || link.options.data.dGuid === portalGuid) {
                 linksFound = true;
                 var linkedPortalGuid = (link.options.data.oGuid === portalGuid) ? link.options.data.dGuid : link.options.data.oGuid;
@@ -464,14 +294,20 @@ function wrapper(plugin_info) {
 
                 var linkedPortal = window.portals[linkedPortalGuid];
                 if (linkedPortal && linkedPortal.options.data && linkedPortal.options.data.title) {
-                    currentPortalData.linkedPortals.push({ name: linkedPortal.options.data.title, guid: linkedPortalGuid });
+                    currentPortalData.linkedPortals.push({
+                        name: linkedPortal.options.data.title,
+                        guid: linkedPortalGuid
+                    });
                     content += '<li id="' + liId + '"><b><a href="#" class="portal-link" data-guid="' + linkedPortalGuid + '" style="color:#ffce00;text-decoration:none;cursor:pointer;">' + linkedPortal.options.data.title + '</a></b> (GUID: ' + linkedPortalGuid + ')</li>';
                 } else {
-                    currentPortalData.linkedPortals.push({ name: "Chargement...", guid: linkedPortalGuid });
+                    currentPortalData.linkedPortals.push({
+                        name: "Chargement...",
+                        guid: linkedPortalGuid
+                    });
                     content += '<li id="' + liId + '"><span style="color:red;">Chargement...</span> (GUID: ' + linkedPortalGuid + ')</li>';
                 }
             }
-        });
+        }
 
         if (!linksFound) {
             content += "<li>Aucun</li>";
@@ -481,34 +317,25 @@ function wrapper(plugin_info) {
 
         var isMobile = isMobileDevice();
 
-        var buttons = [
-            {
+        var buttons = [];
+        
+        if (!isMobile) {
+            buttons.push({
                 text: 'CSV',
-                click: function() { window.plugin.portalDetailsFull.exportToCSV(); },
+                click: function() {
+                    alert("Export CSV disponible sur desktop uniquement");
+                },
                 class: 'export-button-left'
-            },
-            {
-                text: 'TXT',
-                click: function() { window.plugin.portalDetailsFull.exportToTXT(); },
-                class: 'export-button-left'
-            },
-            {
-                text: 'Excel',
-                click: function() { window.plugin.portalDetailsFull.exportToExcel(); },
-                class: 'export-button-left'
-            },
-            {
-                text: 'OK',
-                click: function() { $(this).dialog('close'); },
-                class: 'ok-button-right'
-            }
-        ];
-
-        if (isMobile) {
-            buttons = buttons.filter(function(b) {
-                return b.text !== 'CSV' && b.text !== 'TXT' && b.text !== 'Excel';
             });
         }
+        
+        buttons.push({
+            text: 'OK',
+            click: function() {
+                $(this).dialog('close');
+            },
+            class: 'ok-button-right'
+        });
 
         window.dialog({
             title: 'Full Portal Details - v' + PLUGIN_VERSION,
@@ -537,95 +364,96 @@ function wrapper(plugin_info) {
                 });
             }
 
-            document.querySelectorAll('.portal-link').forEach(function(link) {
-                link.onclick = function(e) {
+            var allPortalLinks = document.querySelectorAll('.portal-link');
+            for (var idx = 0; idx < allPortalLinks.length; idx++) {
+                allPortalLinks[idx].onclick = function(e) {
                     e.preventDefault();
                     var guid = this.getAttribute('data-guid');
                     window.plugin.portalDetailsFull.selectPortal(guid);
                 };
-            });
+            }
         }, 100);
 
-        linkedPortalGuids.forEach(function(linkedPortalGuid) {
-            var linkedPortal = window.portals[linkedPortalGuid];
-            if (!linkedPortal || !linkedPortal.options.data || !linkedPortal.options.data.title) {
-                window.plugin.portalDetailsFull.loadLinkedPortal(linkedPortalGuid, portalGuid);
+        for (i = 0; i < linkedPortalGuids.length; i++) {
+            var lpGuid = linkedPortalGuids[i];
+            var linkedPortal2 = window.portals[lpGuid];
+            if (!linkedPortal2 || !linkedPortal2.options.data || !linkedPortal2.options.data.title) {
+                window.plugin.portalDetailsFull.loadLinkedPortal(lpGuid, portalGuid);
             }
-        });
+        }
     };
 
     window.plugin.portalDetailsFull.addButtonToPortalDetails = function() {
-        if (!window.selectedPortal) return;
+        if (!window.selectedPortal) {
+            return;
+        }
 
-        console.log("[Full Portal Details] Tentative d'ajout du bouton");
+        console.log("[Full Portal Details] Tentative ajout bouton");
 
         $('#portal-details-full-btn').remove();
 
         var portalDetails = $('#portaldetails');
         
         if (portalDetails.length === 0) {
-            console.warn("[Full Portal Details] #portaldetails introuvable");
+            console.warn("[Full Portal Details] portaldetails introuvable");
             return;
         }
 
-        console.log("[Full Portal Details] #portaldetails trouve");
+        console.log("[Full Portal Details] portaldetails trouve");
 
-        var button = $('<a>')
-            .attr({
-                'id': 'portal-details-full-btn',
-                'href': '#',
-                'class': 'plugin-button'
-            })
-            .text('Full Portal Details')
-            .css({
-                'display': 'block',
-                'padding': '8px 12px',
-                'margin': '10px 5px',
-                'background': '#3874ff',
-                'color': 'white',
-                'text-decoration': 'none',
-                'border-radius': '4px',
-                'text-align': 'center',
-                'cursor': 'pointer',
-                'font-weight': 'bold'
-            })
-            .on('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log("[Full Portal Details] Bouton clique");
-                window.plugin.portalDetailsFull.showDetailsDialog();
-                return false;
-            });
+        var button = $('<a></a>');
+        button.attr('id', 'portal-details-full-btn');
+        button.attr('href', '#');
+        button.attr('class', 'plugin-button');
+        button.text('Full Portal Details');
+        button.css('display', 'block');
+        button.css('padding', '8px 12px');
+        button.css('margin', '10px 5px');
+        button.css('background', '#3874ff');
+        button.css('color', 'white');
+        button.css('text-decoration', 'none');
+        button.css('border-radius', '4px');
+        button.css('text-align', 'center');
+        button.css('cursor', 'pointer');
+        button.css('font-weight', 'bold');
+        
+        button.on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("[Full Portal Details] Bouton clique");
+            window.plugin.portalDetailsFull.showDetailsDialog();
+            return false;
+        });
 
         var inserted = false;
 
         var linkDetails = portalDetails.find('.linkdetails');
         if (linkDetails.length) {
-            console.log("[Full Portal Details] Ajout via .linkdetails");
+            console.log("[Full Portal Details] Ajout via linkdetails");
             linkDetails.append(button);
             inserted = true;
         }
 
         if (!inserted) {
-            console.log("[Full Portal Details] Ajout direct a #portaldetails");
+            console.log("[Full Portal Details] Ajout direct a portaldetails");
             portalDetails.append(button);
             inserted = true;
         }
 
         if (inserted) {
-            console.log("[Full Portal Details] Bouton ajoute avec succes");
+            console.log("[Full Portal Details] Bouton ajoute");
         }
     };
 
     window.addHook('portalDetailsUpdated', function() {
-        console.log("[Full Portal Details] Hook portalDetailsUpdated declenche");
+        console.log("[Full Portal Details] Hook declenche");
         setTimeout(function() {
             window.plugin.portalDetailsFull.addButtonToPortalDetails();
         }, 100);
     });
 
     var setup = function() {
-        console.log("[Full Portal Details] Setup appele");
+        console.log("[Full Portal Details] Setup");
         
         setTimeout(function() {
             window.plugin.portalDetailsFull.addButtonToPortalDetails();
@@ -646,6 +474,8 @@ function wrapper(plugin_info) {
 if (window.iitcLoaded) {
     wrapper();
 } else {
-    if (!window.bootPlugins) window.bootPlugins = [];
+    if (!window.bootPlugins) {
+        window.bootPlugins = [];
+    }
     window.bootPlugins.push(wrapper);
 }
