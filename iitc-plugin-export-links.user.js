@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.6.6
+// @version    1.6.7
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin-portal-details-full.user.js
-// @description 1.6.6 Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
+// @description 1.6.7 Affiche les mods, résonateurs (niveau & propriétaire), et les portails reliés (nom + GUID) du portail sélectionné. Bouton Telegram placé à côté de la date et heure. Export CSV/TXT/Excel désactivés sur mobile.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -572,43 +572,50 @@ function wrapper(plugin_info) {
     };
 
     window.plugin.portalDetailsFull.addToSidebar = function() {
-    if (!window.selectedPortal) return;
-    const portal = window.portals[window.selectedPortal];
-    if (!portal) return;
+        if (!window.selectedPortal) return;
+        const portal = window.portals[window.selectedPortal];
+        if (!portal) return;
 
-    let container = document.querySelector(".linkdetails");
-    if (!container) {
-        console.warn("Conteneur .linkdetails introuvable, tentative dans 500ms");
-        setTimeout(window.plugin.portalDetailsFull.addToSidebar, 500);
-        return;
-    }
+        let container = document.querySelector(".linkdetails");
+        if (!container) {
+            console.warn("Conteneur .linkdetails introuvable, tentative dans 500ms");
+            setTimeout(window.plugin.portalDetailsFull.addToSidebar, 500);
+            return;
+        }
 
-    let aside = document.getElementById("portal-details-full-aside");
-    if (!aside) {
-        aside = document.createElement("aside");
-        aside.id = "portal-details-full-aside";
-        container.appendChild(aside);
-    }
+        let aside = document.getElementById("portal-details-full-aside");
+        if (!aside) {
+            aside = document.createElement("aside");
+            aside.id = "portal-details-full-aside";
+            container.appendChild(aside);
+        }
 
-    if (document.getElementById("portal-details-full-btn")) return;
+        if (document.getElementById("portal-details-full-btn")) return;
 
-    const button = document.createElement("a");
-    button.id = "portal-details-full-btn";
-    button.textContent = "Full Portal Details";
-    button.href = "#";
-    button.className = "plugin-button";
+        const button = document.createElement("a");
+        button.id = "portal-details-full-btn";
+        button.textContent = "Full Portal Details";
+        button.href = "#";
+        button.className = "plugin-button";
 
-    button.style.display = "block";  // Force affichage visible
-    button.style.visibility = "visible";
+        button.style.display = "block";
+        button.style.visibility = "visible";
 
-    button.onclick = function(event) {
-        event.preventDefault();
-        window.plugin.portalDetailsFull.showDetailsDialog();
+        button.onclick = function(event) {
+            event.preventDefault();
+            window.plugin.portalDetailsFull.showDetailsDialog();
+        };
+        aside.appendChild(button);
     };
-    aside.appendChild(button);
-};
 
-    window.addHook('portalDetailsUpdated', window.plugin.portalDetailsFull.addToSidebar);
-    window.plugin.portalDetailsFull.addToSidebar();
+    window.addHook('portalDetailsUpdated', () => {
+        setTimeout(() => {
+            window.plugin.portalDetailsFull.addToSidebar();
+        }, 500);
+    });
+
+    setTimeout(() => {
+        window.plugin.portalDetailsFull.addToSidebar();
+    }, 1000);
 }
 wrapper();
