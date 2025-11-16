@@ -2,11 +2,11 @@
 // @id         iitc-plugin-full-portal-details
 // @name       IITC plugin: Full Portal Details
 // @category   Info
-// @version    1.7.2
+// @version    1.7.3
 // @namespace  https://github.com/jeanflo/iitc-plugin-portal-details-full
 // @updateURL  https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.meta.js
 // @downloadURL https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-export-links.user.js
-// @description 1.7.2 Fix Android - Compatible ES5. Affiche les mods, résonateurs et portails reliés. Export Telegram intégré.
+// @description 1.7.3 Fix apostrophes - Compatible Android ES5. Affiche les mods, resonateurs et portails relies. Export Telegram integre.
 // @include        https://*.ingress.com/*
 // @include        http://*.ingress.com/*
 // @match          https://*.ingress.com/*
@@ -15,7 +15,7 @@
 // ==/UserScript==
 
 function wrapper(plugin_info) {
-    var PLUGIN_VERSION = "1.7.2";
+    var PLUGIN_VERSION = "1.7.3";
     var PLUGIN_NAME = "Full Portal Details";
 
     console.log("[Full Portal Details] Initialisation v" + PLUGIN_VERSION);
@@ -35,7 +35,7 @@ function wrapper(plugin_info) {
     var currentPortalData = null;
 
     var isMobileDevice = function() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                window.useAndroidPanes !== undefined ||
                (typeof window.isSmartphone === 'function' && window.isSmartphone());
     };
@@ -217,7 +217,7 @@ function wrapper(plugin_info) {
         }
 
         navigator.clipboard.writeText(telegramContent).then(function() {
-            alert("✅ Données copiées au format Telegram !\nCollez directement dans votre groupe Telegram.");
+            alert("✅ Donnees copiees au format Telegram !\nCollez directement dans votre groupe Telegram.");
         }).catch(function(err) {
             console.error("[Full Portal Details] Erreur lors de la copie : ", err);
             alert("❌ Impossible de copier dans le presse-papiers.");
@@ -228,7 +228,7 @@ function wrapper(plugin_info) {
         if (!currentPortalData) return;
 
         if (typeof ExcelJS === 'undefined') {
-            alert("⏳ Chargement de la bibliothèque Excel en cours...\nRéessayez dans 2 secondes.");
+            alert("⏳ Chargement de la bibliotheque Excel en cours...\nReessayez dans 2 secondes.");
             return;
         }
 
@@ -237,7 +237,7 @@ function wrapper(plugin_info) {
         var portalGuid = currentPortalData.portalGuid;
 
         var workbook = new ExcelJS.Workbook();
-        var worksheet = workbook.addWorksheet('Détails Portail');
+        var worksheet = workbook.addWorksheet('Details Portail');
 
         var headerStyle = {
             font: { bold: true, size: 12 },
@@ -274,7 +274,7 @@ function wrapper(plugin_info) {
         worksheet.mergeCells('A' + row.number + ':C' + row.number);
         row.getCell(1).style = titleStyle;
 
-        row = worksheet.addRow(['Nom', 'Propriétaire', 'Rareté']);
+        row = worksheet.addRow(['Nom', 'Proprietaire', 'Rarete']);
         row.eachCell(function(cell) { cell.style = headerStyle; });
 
         var filteredMods = currentPortalData.mods.filter(function(mod) { return mod !== null; });
@@ -288,11 +288,11 @@ function wrapper(plugin_info) {
 
         worksheet.addRow([]);
 
-        row = worksheet.addRow(['RÉSONATEURS']);
+        row = worksheet.addRow(['RESONATEURS']);
         worksheet.mergeCells('A' + row.number + ':B' + row.number);
         row.getCell(1).style = titleStyle;
 
-        row = worksheet.addRow(['Niveau', 'Propriétaire']);
+        row = worksheet.addRow(['Niveau', 'Proprietaire']);
         row.eachCell(function(cell) { cell.style = headerStyle; });
 
         var filteredRes = currentPortalData.resonators.filter(function(res) { return res !== null; });
@@ -306,7 +306,7 @@ function wrapper(plugin_info) {
 
         worksheet.addRow([]);
 
-        row = worksheet.addRow(['PORTAILS RELIÉS']);
+        row = worksheet.addRow(['PORTAILS RELIES']);
         worksheet.mergeCells('A' + row.number + ':B' + row.number);
         row.getCell(1).style = titleStyle;
 
@@ -366,7 +366,7 @@ function wrapper(plugin_info) {
             }
         }).fail(function() {
             if (li) {
-                li.innerHTML = '<span style="color:red;">Échec du chargement</span> (GUID: ' + linkedPortalGuid + ')';
+                li.innerHTML = '<span style="color:red;">Echec du chargement</span> (GUID: ' + linkedPortalGuid + ')';
                 failedPortals.add(linkedPortalGuid);
 
                 if (retryTimers[linkedPortalGuid]) clearTimeout(retryTimers[linkedPortalGuid]);
@@ -381,14 +381,14 @@ function wrapper(plugin_info) {
         if (!retryCount) retryCount = 0;
 
         if (!window.selectedPortal) {
-            console.log("[Full Portal Details] Aucun portail sélectionné");
+            console.log("[Full Portal Details] Aucun portail selectionne");
             return;
         }
 
         var portal = window.portals[window.selectedPortal];
 
         if (!portal || !portal.options.data) {
-            console.log("[Full Portal Details] Chargement des détails du portail...");
+            console.log("[Full Portal Details] Chargement des details du portail...");
 
             if (retryCount < 3) {
                 window.portalDetail.request(window.selectedPortal).done(function() {
@@ -401,11 +401,11 @@ function wrapper(plugin_info) {
                             window.plugin.portalDetailsFull.showDetailsDialog(retryCount + 1);
                         }, 500);
                     } else {
-                        alert("Impossible de charger les détails de ce portail. Veuillez réessayer.");
+                        alert("Impossible de charger les details de ce portail. Veuillez reessayer.");
                     }
                 });
             } else {
-                alert("Impossible de charger les détails de ce portail après plusieurs tentatives.");
+                alert("Impossible de charger les details de ce portail apres plusieurs tentatives.");
             }
             return;
         }
@@ -441,18 +441,18 @@ function wrapper(plugin_info) {
         content += '<h4><b>Mods</b></h4><ul>';
         var filteredMods = mods.filter(function(mod) { return mod !== null; });
         content += filteredMods.length
-            ? filteredMods.map(function(mod) { return '<li><b>' + (mod.name || "Mod inconnu") + '</b> (Propriétaire: ' + (mod.owner || "Inconnu") + ', Rareté: ' + (mod.rarity || "Inconnue") + ')</li>'; }).join('')
+            ? filteredMods.map(function(mod) { return '<li><b>' + (mod.name || "Mod inconnu") + '</b> (Proprietaire: ' + (mod.owner || "Inconnu") + ', Rarete: ' + (mod.rarity || "Inconnue") + ')</li>'; }).join('')
             : "<li>Aucun</li>";
         content += '</ul>';
 
-        content += '<h4><b>Résonateurs</b></h4><ul>';
+        content += '<h4><b>Resonateurs</b></h4><ul>';
         var filteredRes = resonators.filter(function(res) { return res !== null; });
         content += filteredRes.length
-            ? filteredRes.map(function(res) { return '<li><b>Niveau ' + (res.level || "?") + '</b> (Propriétaire: ' + (res.owner || "Inconnu") + ')</li>'; }).join('')
+            ? filteredRes.map(function(res) { return '<li><b>Niveau ' + (res.level || "?") + '</b> (Proprietaire: ' + (res.owner || "Inconnu") + ')</li>'; }).join('')
             : "<li>Aucun</li>";
         content += '</ul>';
 
-        content += '<h4><b>Portails reliés</b></h4><ul id="linked-portals-list">';
+        content += '<h4><b>Portails relies</b></h4><ul id="linked-portals-list">';
 
         var linksFound = false;
         var linkedPortalGuids = [];
@@ -566,15 +566,15 @@ function wrapper(plugin_info) {
 
         // Essayer plusieurs emplacements possibles
         var portalDetails = $('#portaldetails');
-
+        
         if (portalDetails.length === 0) {
             console.warn("[Full Portal Details] #portaldetails introuvable");
             return;
         }
 
-        console.log("[Full Portal Details] #portaldetails trouvé");
+        console.log("[Full Portal Details] #portaldetails trouve");
 
-        // Créer le bouton avec jQuery
+        // Creer le bouton avec jQuery
         var button = $('<a>')
             .attr({
                 'id': 'portal-details-full-btn',
@@ -597,15 +597,15 @@ function wrapper(plugin_info) {
             .on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log("[Full Portal Details] Bouton cliqué");
+                console.log("[Full Portal Details] Bouton clique");
                 window.plugin.portalDetailsFull.showDetailsDialog();
                 return false;
             });
 
-        // Tenter plusieurs méthodes d'insertion
+        // Tenter plusieurs methodes d'insertion
         var inserted = false;
 
-        // Méthode 1: Chercher .linkdetails dans portaldetails
+        // Methode 1: Chercher .linkdetails dans portaldetails
         var linkDetails = portalDetails.find('.linkdetails');
         if (linkDetails.length) {
             console.log("[Full Portal Details] Ajout via .linkdetails");
@@ -613,21 +613,21 @@ function wrapper(plugin_info) {
             inserted = true;
         }
 
-        // Méthode 2: Ajouter directement à portaldetails
+        // Methode 2: Ajouter directement a portaldetails
         if (!inserted) {
-            console.log("[Full Portal Details] Ajout direct à #portaldetails");
+            console.log("[Full Portal Details] Ajout direct a #portaldetails");
             portalDetails.append(button);
             inserted = true;
         }
 
         if (inserted) {
-            console.log("[Full Portal Details] Bouton ajouté avec succès");
+            console.log("[Full Portal Details] Bouton ajoute avec succes");
         }
     };
 
-    // Hook sur portalDetailsUpdated - méthode standard IITC
+    // Hook sur portalDetailsUpdated - methode standard IITC
     window.addHook('portalDetailsUpdated', function() {
-        console.log("[Full Portal Details] Hook portalDetailsUpdated déclenché");
+        console.log("[Full Portal Details] Hook portalDetailsUpdated declenche");
         setTimeout(function() {
             window.plugin.portalDetailsFull.addButtonToPortalDetails();
         }, 100);
@@ -635,9 +635,9 @@ function wrapper(plugin_info) {
 
     // Setup pour IITC
     var setup = function() {
-        console.log("[Full Portal Details] Setup appelé");
-
-        // Attendre que le DOM soit prêt
+        console.log("[Full Portal Details] Setup appele");
+        
+        // Attendre que le DOM soit pret
         setTimeout(function() {
             window.plugin.portalDetailsFull.addButtonToPortalDetails();
         }, 2000);
@@ -651,7 +651,7 @@ function wrapper(plugin_info) {
         window.bootPlugins = [setup];
     }
 
-    console.log("[Full Portal Details] Plugin initialisé v" + PLUGIN_VERSION);
+    console.log("[Full Portal Details] Plugin initialise v" + PLUGIN_VERSION);
 }
 
 // Initialisation
