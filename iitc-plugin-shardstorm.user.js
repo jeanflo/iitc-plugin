@@ -1,8 +1,8 @@
 // ==UserScript==
 // @id             iitc-plugin-shardstorm
 // @name           IITC plugin: ShardStorm
-// @category       Anomaly
-// @version        1.1.4
+// @category       Layer
+// @version        1.1.5
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
@@ -25,15 +25,15 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm = {};
     window.plugin.shardstorm.layers = {
         zone1: null,
-        zone3: null,
-        zone5: null
+        zone5: null,
+        zone10: null
     };
     window.plugin.shardstorm.activeGuid = null;
 
     // --- 1. LOGIQUE DE DESSIN ---
     window.plugin.shardstorm.toggle = function() {
         var guid = window.selectedPortal;
-        
+
         if (!guid) return;
 
         // Si actif sur ce portail -> On éteint tout
@@ -58,11 +58,11 @@ function wrapper(plugin_info) {
         L.circle(latLng, 1000, $.extend({}, commonStyle, { color: '#FF0000', fillColor: '#FF0000' }))
          .addTo(window.plugin.shardstorm.layers.zone1);
 
-        L.circle(latLng, 3000, $.extend({}, commonStyle, { color: '#00FF00', fillColor: '#00FF00' }))
-         .addTo(window.plugin.shardstorm.layers.zone3);
-
-        L.circle(latLng, 5000, $.extend({}, commonStyle, { color: '#FF0000', fillColor: '#FF0000' }))
+        L.circle(latLng, 5000, $.extend({}, commonStyle, { color: '#00FF00', fillColor: '#00FF00' }))
          .addTo(window.plugin.shardstorm.layers.zone5);
+
+        L.circle(latLng, 10000, $.extend({}, commonStyle, { color: '#FF0000', fillColor: '#FF0000' }))
+         .addTo(window.plugin.shardstorm.layers.zone10);
 
         window.plugin.shardstorm.activeGuid = guid;
         window.plugin.shardstorm.updateButton(true);
@@ -70,9 +70,9 @@ function wrapper(plugin_info) {
 
     window.plugin.shardstorm.clear = function() {
         window.plugin.shardstorm.layers.zone1.clearLayers();
-        window.plugin.shardstorm.layers.zone3.clearLayers();
         window.plugin.shardstorm.layers.zone5.clearLayers();
-        
+        window.plugin.shardstorm.layers.zone10.clearLayers();
+
         window.plugin.shardstorm.activeGuid = null;
         window.plugin.shardstorm.updateButton(false);
     };
@@ -84,25 +84,25 @@ function wrapper(plugin_info) {
             if (isActive) {
                 btn.textContent = 'ShardStorm: ON';
                 // Couleur jaune standard IITC (#ffce00) pour l'état actif
-                btn.style.color = '#ffce00'; 
+                btn.style.color = '#ffce00';
             } else {
                 btn.textContent = 'ShardStorm: Off';
                 // On enlève le style inline pour revenir à la couleur par défaut du lien
-                btn.style.color = ''; 
+                btn.style.color = '';
             }
         }
     };
 
     window.plugin.shardstorm.addToSidebar = function() {
         if (!window.selectedPortal) return;
-        
+
         // On vérifie si le conteneur principal existe
         var container = document.getElementById('portaldetails');
         if (!container) return;
 
         // On cherche la section .linkdetails (standard IITC)
         var linkDetails = container.querySelector('.linkdetails');
-        
+
         // Si le bouton existe déjà, on ne fait rien
         if (document.getElementById('shardstorm-btn')) return;
 
@@ -143,14 +143,14 @@ function wrapper(plugin_info) {
     var setup = function() {
         // Création des calques
         window.plugin.shardstorm.layers.zone1 = new L.LayerGroup();
-        window.plugin.shardstorm.layers.zone3 = new L.LayerGroup();
         window.plugin.shardstorm.layers.zone5 = new L.LayerGroup();
+        window.plugin.shardstorm.layers.zone10 = new L.LayerGroup();
 
         window.addLayerGroup('ShardStorm (1km)', window.plugin.shardstorm.layers.zone1, true);
-        window.addLayerGroup('ShardStorm (3km)', window.plugin.shardstorm.layers.zone3, true);
         window.addLayerGroup('ShardStorm (5km)', window.plugin.shardstorm.layers.zone5, true);
+        window.addLayerGroup('ShardStorm (10km)', window.plugin.shardstorm.layers.zone10, true);
 
-        // PLUS DE CSS INJECTÉ ICI. 
+        // PLUS DE CSS INJECTÉ ICI.
         // On laisse IITC gérer le style natif des liens dans <aside>.
 
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
