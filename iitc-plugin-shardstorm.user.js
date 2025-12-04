@@ -2,11 +2,11 @@
 // @id             iitc-plugin-shardstorm
 // @name           IITC plugin: ShardStorm
 // @category       Layer
-// @version        1.1.3
+// @version        1.1.4
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Affiche les zones tactiques (1-3-5km) avec gestion individuelle des calques. Optimisé Mobile.
+// @description    Affiche les zones tactiques (1-3-5km) avec gestion individuelle des calques. Style natif.
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -18,7 +18,7 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312040017';
+    plugin_info.dateTimeVersion = '202312040018';
     plugin_info.pluginId = 'shardstorm';
 
     // Initialisation
@@ -49,14 +49,12 @@ function wrapper(plugin_info) {
         var latLng = portal ? portal.getLatLng() : null;
         if (!latLng) return;
 
-        // Options communes pour le style
         var commonStyle = {
             fillOpacity: 0.05,
             weight: 1,
             interactive: false
         };
 
-        // Dessin des cercles dans leurs calques respectifs
         L.circle(latLng, 1000, $.extend({}, commonStyle, { color: '#FF0000', fillColor: '#FF0000' }))
          .addTo(window.plugin.shardstorm.layers.zone1);
 
@@ -81,82 +79,82 @@ function wrapper(plugin_info) {
 
     // --- 2. INTERFACE UTILISATEUR ---
     window.plugin.shardstorm.updateButton = function(isActive) {
-        var btn = $('#shardstorm-btn');
-        if (btn.length) {
+        var btn = document.getElementById('shardstorm-btn');
+        if (btn) {
             if (isActive) {
-                btn.text('ShardStorm: ON')
-                   .addClass('active');
+                btn.textContent = 'ShardStorm: ON';
+                // Couleur jaune standard IITC (#ffce00) pour l'état actif
+                btn.style.color = '#ffce00'; 
             } else {
-                btn.text('ShardStorm: Off')
-                   .removeClass('active');
+                btn.textContent = 'ShardStorm: Off';
+                // On enlève le style inline pour revenir à la couleur par défaut du lien
+                btn.style.color = ''; 
             }
         }
     };
 
-    window.plugin.shardstorm.onPortalSelected = function() {
-        var guid = window.selectedPortal;
-        if (!guid) return;
+    window.plugin.shardstorm.addToSidebar = function() {
+        if (!window.selectedPortal) return;
+        
+        // On vérifie si le conteneur principal existe
+        var container = document.getElementById('portaldetails');
+        if (!container) return;
 
-        $('#shardstorm-aside').remove();
+        // On cherche la section .linkdetails (standard IITC)
+        var linkDetails = container.querySelector('.linkdetails');
+        
+        // Si le bouton existe déjà, on ne fait rien
+        if (document.getElementById('shardstorm-btn')) return;
 
-        var aside = $('<aside id="shardstorm-aside"></aside>');
-        var btn = $('<a id="shardstorm-btn" href="#" onclick="return false;" title="Calculer les zones">ShardStorm: Off</a>');
+        // Création de l'élément <aside> comme dans votre exemple
+        var aside = document.createElement('aside');
+        aside.id = 'shardstorm-aside';
 
-        if (window.plugin.shardstorm.activeGuid === guid) {
-            btn.text('ShardStorm: ON')
-               .addClass('active');
+        // Création du lien <a> (le bouton)
+        var btn = document.createElement('a');
+        btn.id = 'shardstorm-btn';
+        btn.textContent = 'ShardStorm: Off';
+        btn.href = '#';
+        // On n'ajoute PAS de classe CSS personnalisée pour éviter les styles bizarres
+        // On gère juste le clic
+        btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.plugin.shardstorm.toggle();
+            return false;
+        };
+
+        // Si le plugin était déjà actif sur ce portail (ex: rechargement), on remet l'état visuel
+        if (window.plugin.shardstorm.activeGuid === window.selectedPortal) {
+            btn.textContent = 'ShardStorm: ON';
+            btn.style.color = '#ffce00';
         }
 
-        btn.on('click', function(e) {
-            e.preventDefault();
-            window.plugin.shardstorm.toggle();
-        });
+        aside.appendChild(btn);
 
-        aside.append(btn);
-        $('.linkdetails').append(aside);
+        // Insertion dans le DOM
+        if (linkDetails) {
+            linkDetails.appendChild(aside);
+        } else {
+            container.appendChild(aside);
+        }
     };
 
     var setup = function() {
-        // Création des groupes de calques
+        // Création des calques
         window.plugin.shardstorm.layers.zone1 = new L.LayerGroup();
         window.plugin.shardstorm.layers.zone3 = new L.LayerGroup();
         window.plugin.shardstorm.layers.zone5 = new L.LayerGroup();
 
-        // Ajout au menu Layers
         window.addLayerGroup('ShardStorm (1km)', window.plugin.shardstorm.layers.zone1, true);
         window.addLayerGroup('ShardStorm (3km)', window.plugin.shardstorm.layers.zone3, true);
         window.addLayerGroup('ShardStorm (5km)', window.plugin.shardstorm.layers.zone5, true);
 
-        // CSS Optimisé Mobile
-        $('<style>').prop('type', 'text/css').html(`
-            #shardstorm-aside {
-                display: block;
-                text-align: center;
-                margin: 6px 0;
-            }
-            #shardstorm-btn {
-                display: inline-block;
-                padding: 4px 10px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 4px;
-                text-decoration: none;
-                color: #ddd;
-                background: rgba(0, 0, 0, 0.2);
-                cursor: pointer;
-            }
-            #shardstorm-btn:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-            #shardstorm-btn.active {
-                color: #ffce00;
-                border-color: #ffce00;
-                background: rgba(100, 80, 0, 0.3);
-                font-weight: bold;
-            }
-        `).appendTo('head');
+        // PLUS DE CSS INJECTÉ ICI. 
+        // On laisse IITC gérer le style natif des liens dans <aside>.
 
-        window.addHook('portalDetailsUpdated', window.plugin.shardstorm.onPortalSelected);
-        console.log('[ShardStorm] Plugin loaded (URLs fixed).');
+        window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
+        console.log('[ShardStorm] Plugin loaded (Native Style).');
     };
 
     setup.info = plugin_info;
