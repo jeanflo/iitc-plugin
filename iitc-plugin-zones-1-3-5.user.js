@@ -1,170 +1,162 @@
 // ==UserScript==
-// @id             iitc-plugin-zones-1-3-5
-// @name           IITC plugin: Zones 1-3-5km
+// @id             iitc-plugin-shardstorm
+// @name           IITC plugin: ShardStorm
 // @category       Layer
 // @version        1.0.0
-// @namespace      https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-zones-1-3-5
-// @updateURL      https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-zones-1-3-5.meta.js
-// @downloadURL    https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-zones-1-3-5.user.js
-// @description    Affiche 3 zones concentriques (0-1km rouge, 1-3km vert, 3-5km rouge) autour du portail sélectionné.
+// @namespace      https://github.com/jeanflo/iitc-plugin
+// @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/shardstorm.meta.js
+// @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/shardstorm.user.js
+// @description    Affiche les zones tactiques (1-3-5km) autour du portail sélectionné.
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
-// @match          http://*.ingress.com/intel*
-// @include        https://*.ingress.com/mission/*
-// @include        http://*.ingress.com/mission/*
-// @match          https://*.ingress.com/mission/*
-// @match          http://*.ingress.com/mission/*
+// @match          https://intel.ingress.com/intel*
 // @grant          none
 // ==/UserScript==
 
 function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
-    plugin_info.buildName = 'iitc-plugin-zones-1-3-5';
-    plugin_info.dateTimeVersion = '202310270002';
-    plugin_info.pluginId = 'zones-1-3-5';
+    plugin_info.buildName = 'iitc-plugin-shardstorm';
+    plugin_info.dateTimeVersion = '202312040010';
+    plugin_info.pluginId = 'shardstorm';
 
-    window.plugin.zones135 = {};
-    window.plugin.zones135.layerGroup = null;
-    window.plugin.zones135.activeGuid = null; // Stocke le GUID du portail actif
+    // Initialisation de l'objet principal
+    window.plugin.shardstorm = {};
+    window.plugin.shardstorm.layerGroup = null;
+    window.plugin.shardstorm.activeGuid = null;
 
-    // --- 1. FONCTION DE DESSIN ---
-    window.plugin.zones135.toggleZones = function() {
+    // --- 1. LOGIQUE DE DESSIN ---
+    window.plugin.shardstorm.toggle = function() {
         var guid = window.selectedPortal;
         
-        // Si les zones sont déjà affichées pour CE portail, on les efface (Toggle OFF)
-        if (window.plugin.zones135.activeGuid === guid) {
-            window.plugin.zones135.clearZones();
+        if (!guid) return;
+
+        // Si on clique alors que c'est déjà actif sur ce portail -> On éteint
+        if (window.plugin.shardstorm.activeGuid === guid) {
+            window.plugin.shardstorm.clear();
             return;
         }
 
-        // Sinon, on efface tout et on redessine (Toggle ON ou Changement de portail)
-        window.plugin.zones135.clearZones();
+        // Sinon on nettoie tout et on dessine
+        window.plugin.shardstorm.clear();
 
-        if (!guid) return;
         var portal = window.portals[guid];
         var latLng = portal ? portal.getLatLng() : null;
         if (!latLng) return;
 
-        // Configuration des cercles (du plus grand au plus petit)
+        // Configuration des zones (Rayons en mètres)
         var circles = [
-            { radius: 5000, color: '#FF0000' }, // 3-5km (Fond Rouge)
-            { radius: 3000, color: '#00FF00' }, // 1-3km (Milieu Vert)
-            { radius: 1000, color: '#FF0000' }  // 0-1km (Centre Rouge)
+            { radius: 5000, color: '#FF0000', title: '5km' }, 
+            { radius: 3000, color: '#00FF00', title: '3km' }, 
+            { radius: 1000, color: '#FF0000', title: '1km' }
         ];
 
         circles.forEach(function(c) {
             var circle = L.circle(latLng, c.radius, {
                 color: c.color,
                 fillColor: c.color,
-                fillOpacity: 0.15,
+                fillOpacity: 0.1,
                 weight: 2,
-                interactive: false // Les clics traversent les zones
+                interactive: false
             });
-            window.plugin.zones135.layerGroup.addLayer(circle);
+            window.plugin.shardstorm.layerGroup.addLayer(circle);
         });
 
-        window.plugin.zones135.activeGuid = guid;
-        window.plugin.zones135.updateButtonState(true);
+        window.plugin.shardstorm.activeGuid = guid;
+        window.plugin.shardstorm.updateButton(true);
     };
 
-    window.plugin.zones135.clearZones = function() {
-        window.plugin.zones135.layerGroup.clearLayers();
-        window.plugin.zones135.activeGuid = null;
-        window.plugin.zones135.updateButtonState(false);
+    window.plugin.shardstorm.clear = function() {
+        window.plugin.shardstorm.layerGroup.clearLayers();
+        window.plugin.shardstorm.activeGuid = null;
+        window.plugin.shardstorm.updateButton(false);
     };
 
-    // --- 2. GESTION DU BOUTON (Inspiré de Intel Helper) ---
-    window.plugin.zones135.updateButtonState = function(isActive) {
-        var btn = $('#zones135-btn');
+    // --- 2. INTERFACE UTILISATEUR ---
+    window.plugin.shardstorm.updateButton = function(isActive) {
+        var btn = $('#shardstorm-btn');
         if (btn.length) {
             if (isActive) {
-                btn.text('MASQUER ZONES').addClass('active');
+                btn.text('SHARDSTORM : OFF').addClass('active');
             } else {
-                btn.text('ZONES 1-3-5 KM').removeClass('active');
+                btn.text('SHARDSTORM : ON').removeClass('active');
             }
         }
     };
 
-    window.plugin.zones135.onPortalSelected = function() {
-        // Nettoyage de l'ancien bouton s'il existe (pour éviter les doublons)
-        $('.zones135-container').remove();
-
+    window.plugin.shardstorm.onPortalSelected = function() {
         var guid = window.selectedPortal;
         if (!guid) return;
 
-        // Création du conteneur et du bouton
-        var container = $('<div class="zones135-container"></div>');
-        var btn = $('<a id="zones135-btn">ZONES 1-3-5 KM</a>');
+        // Nettoyage de l'interface précédente
+        $('#shardstorm-container').remove();
 
-        // Vérifier si ce portail a déjà les zones actives
-        if (window.plugin.zones135.activeGuid === guid) {
-            btn.text('MASQUER ZONES').addClass('active');
+        // Création du conteneur
+        var container = $('<div id="shardstorm-container"></div>');
+        var btn = $('<a id="shardstorm-btn">SHARDSTORM : ON</a>');
+
+        // Vérification de l'état
+        if (window.plugin.shardstorm.activeGuid === guid) {
+            btn.text('SHARDSTORM : OFF').addClass('active');
         }
 
-        // --- FIX MOBILE IMPORTANT ---
-        // Utilisation de 'touchstart' ET 'click' avec stopPropagation
-        // C'est la méthode utilisée dans Intel Helper Enhanced pour garantir le fonctionnement mobile
+        // Gestion du clic (Tactile + Souris)
         btn.on('click touchstart', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Empêche IITC de fermer le panneau ou de cliquer sur la carte
-            window.plugin.zones135.toggleZones();
+            e.stopPropagation();
+            window.plugin.shardstorm.toggle();
             return false;
         });
 
         container.append(btn);
 
-        // Insertion dans l'interface
-        // On cherche '.link-list' (présent sur mobile et desktop)
-        var linkList = $('.link-list');
-        if (linkList.length > 0) {
-            // On l'ajoute juste après les liens (Intel/GMap)
-            linkList.after(container); 
-        } else {
-            $('#portaldetails').append(container);
-        }
+        // Ajout à la fin du panneau de détail (Endroit sûr)
+        $('#portaldetails').append(container);
     };
 
     var setup = function() {
-        // Création du LayerGroup
-        window.plugin.zones135.layerGroup = new L.LayerGroup();
-        window.addLayer(window.plugin.zones135.layerGroup);
+        window.plugin.shardstorm.layerGroup = new L.LayerGroup();
+        window.addLayer(window.plugin.shardstorm.layerGroup);
 
-        // Injection CSS (Inspiré de Intel Helper)
+        // Styles CSS
         $('<style>').prop('type', 'text/css').html(`
-            .zones135-container { 
-                text-align: center; 
-                margin: 8px 0; 
-                padding: 0 5px;
-            }
-            #zones135-btn { 
-                display: block; 
-                background: rgba(8, 48, 78, 0.9); 
-                border: 1px solid #20A8B1; 
-                color: #ffce00; 
-                padding: 8px; 
-                cursor: pointer; 
-                font-weight: bold; 
+            #shardstorm-container {
+                width: 100%;
                 text-align: center;
+                margin-top: 8px;
+                padding-bottom: 5px;
+                clear: both;
+            }
+            #shardstorm-btn { 
+                display: inline-block;
+                min-width: 150px;
+                padding: 6px 12px;
+                border: 1px solid #00c2ff; /* Bleu cyan futuriste */
+                color: #00c2ff;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: bold;
+                background: rgba(0, 20, 30, 0.6);
                 text-decoration: none;
-                user-select: none; /* Empêche la sélection de texte sur mobile */
+                box-shadow: 0 0 5px rgba(0, 194, 255, 0.2);
             }
-            #zones135-btn:hover { 
-                background: rgba(8, 48, 78, 1); 
-                border-color: #ffce00; 
+            #shardstorm-btn:hover { 
+                background: rgba(0, 194, 255, 0.2); 
+                box-shadow: 0 0 10px rgba(0, 194, 255, 0.5);
             }
-            #zones135-btn.active {
-                background: #400000; /* Fond rouge sombre quand actif */
-                color: #ff8888;
+            #shardstorm-btn.active {
+                background: #500000;
                 border-color: #ff0000;
+                color: #ffcccc;
+                box-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
             }
         `).appendTo('head');
 
-        // Hook quand on clique sur un portail
-        window.addHook('portalDetailsUpdated', window.plugin.zones135.onPortalSelected);
+        // Hook officiel IITC
+        window.addHook('portalDetailsUpdated', window.plugin.shardstorm.onPortalSelected);
         
-        console.log('[Zones 1-3-5] Plugin chargé.');
+        console.log('[ShardStorm] Plugin activé.');
     };
 
     setup.info = plugin_info;
