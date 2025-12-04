@@ -7,8 +7,10 @@
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
 // @description    Affiche les zones tactiques (1-3-5km) avec gestion individuelle des calques. Optimisé Mobile.
+// @include        https://intel.ingress.com/*
+// @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
-// @match          http://intel.ingress.com/*
+// @match          https://intel.ingress.com/intel*
 // @grant          none
 // ==/UserScript==
 
@@ -16,7 +18,7 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312040016';
+    plugin_info.dateTimeVersion = '202312040017';
     plugin_info.pluginId = 'shardstorm';
 
     // Initialisation
@@ -129,16 +131,16 @@ function wrapper(plugin_info) {
         $('<style>').prop('type', 'text/css').html(`
             #shardstorm-aside {
                 display: block;
-                text-align: center; /* Centre le bouton */
-                margin: 6px 0;      /* Un peu d'espace vertical */
+                text-align: center;
+                margin: 6px 0;
             }
             #shardstorm-btn {
-                display: inline-block; /* Le bouton s'adapte à la taille du texte */
-                padding: 4px 10px;     /* Espace intérieur confortable */
-                border: 1px solid rgba(255, 255, 255, 0.2); /* Bordure très légère style IITC */
+                display: inline-block;
+                padding: 4px 10px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
                 border-radius: 4px;
                 text-decoration: none;
-                color: #ddd;           /* Couleur par défaut */
+                color: #ddd;
                 background: rgba(0, 0, 0, 0.2);
                 cursor: pointer;
             }
@@ -146,7 +148,7 @@ function wrapper(plugin_info) {
                 background: rgba(255, 255, 255, 0.1);
             }
             #shardstorm-btn.active {
-                color: #ffce00;        /* Jaune actif IITC */
+                color: #ffce00;
                 border-color: #ffce00;
                 background: rgba(100, 80, 0, 0.3);
                 font-weight: bold;
@@ -154,7 +156,7 @@ function wrapper(plugin_info) {
         `).appendTo('head');
 
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.onPortalSelected);
-        console.log('[ShardStorm] Plugin loaded (Mobile fix).');
+        console.log('[ShardStorm] Plugin loaded (URLs fixed).');
     };
 
     setup.info = plugin_info;
