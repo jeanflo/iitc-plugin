@@ -2,7 +2,7 @@
 // @id             iitc-plugin-shardstorm
 // @name           IITC plugin: ShardStorm
 // @category       Layer
-// @version        1.1.1
+// @version        1.1.2
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/main/shardstorm.user.js
