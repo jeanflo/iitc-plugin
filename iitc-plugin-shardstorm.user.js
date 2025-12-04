@@ -2,7 +2,7 @@
 // @id             iitc-plugin-shardstorm
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
-// @author          Z0mZ0m
+// @author         Z0mZ0m
 // @version        1.2.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
