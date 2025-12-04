@@ -3,13 +3,13 @@
 // @name           IITC plugin: Zones 1-3-5km
 // @category       Layer
 // @version        1.0.0
-// @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
+// @namespace      https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-zones-1-3-5
 // @updateURL      https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-zones-1-3-5.meta.js
 // @downloadURL    https://github.com/jeanflo/iitc-plugin/blob/main/iitc-plugin-zones-1-3-5.user.js
 // @description    Affiche 3 zones concentriques (0-1km rouge, 1-3km vert, 3-5km rouge) autour du portail sélectionné.
-// @include        https://*.ingress.com/intel*
+// @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
-// @match          https://*.ingress.com/intel*
+// @match          https://intel.ingress.com/*
 // @match          http://*.ingress.com/intel*
 // @include        https://*.ingress.com/mission/*
 // @include        http://*.ingress.com/mission/*
