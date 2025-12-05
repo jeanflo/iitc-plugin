@@ -3,11 +3,11 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.18.0
+// @version        1.20.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Affiche les zones tactiques + Export (Style natif IITC).
+// @description    Affiche les zones tactiques + Liste Auto-Refresh + Sidebar Native.
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -19,7 +19,7 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312051500';
+    plugin_info.dateTimeVersion = '202312051800';
     plugin_info.pluginId = 'shardstorm';
 
     // --- INIT ---
@@ -33,6 +33,7 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.monitorInterval = null; 
     window.plugin.shardstorm.listInterval = null;
     window.plugin.shardstorm.isForceLoading = false;
+    window.plugin.shardstorm.activeTab = 'z1';
 
     // --- SETTINGS ---
     window.plugin.shardstorm.settings = { opacity: 0.1, borderWeight: 1, color1: '#FF0000', color2: '#FFFFFF', color3: '#FF0000' };
@@ -156,7 +157,7 @@ function wrapper(plugin_info) {
         return z;
     };
 
-    // --- DOWNLOAD ROBUSTE ---
+    // --- DOWNLOAD ---
     window.plugin.shardstorm.saveFile = function(content, filename, mimeType) {
         if (typeof android !== 'undefined' && android && android.saveFile) {
             android.saveFile(filename, mimeType, content);
@@ -177,72 +178,52 @@ function wrapper(plugin_info) {
         setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     };
 
-    // --- EXPORT MENU ---
-    window.plugin.shardstorm.updateCounts = function() {
-        var z = window.plugin.shardstorm.scanPortals();
-        if (z) {
-            $('#count-z1').text(z.z1.length);
-            $('#count-z2').text(z.z2.length);
-            $('#count-z3').text(z.z3.length);
-            $('#list-btn-z1').text('Zone -1 ('+z.z1.length+')');
-            $('#list-btn-z2').text('Zone 1-5 ('+z.z2.length+')');
-            $('#list-btn-z3').text('Zone 5-10 ('+z.z3.length+')');
-        }
-    };
-
-    window.plugin.shardstorm.openExportMenu = function() {
-        if (!window.plugin.shardstorm.activeGuid) { alert('Activez ShardStorm d\'abord.'); return; }
-
-        var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
-        var statusColor = window.plugin.shardstorm.isForceLoading ? '#ffce00' : '#aaa';
-        var statusText = window.plugin.shardstorm.isForceLoading ? 'Chargement forcé...' : 'Mode normal.';
-
-        var html = `
-            <div style="min-width:300px;">
-                <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px; border:1px solid #444;">
-                    <label style="color:#ffce00; font-weight:bold; cursor:pointer;">
-                        <input type="checkbox" class="shardstorm-chk-force" ${isChecked} onchange="window.plugin.shardstorm.toggleForceLoad()"> 👁️ Force Load
-                    </label>
-                    <div class="shardstorm-force-status" style="font-size:11px; color:${statusColor}; margin-left:20px;">${statusText}</div>
-                </div>
-
-                <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px; border:1px solid #444;">
-                    <p style="margin:0 0 5px 0; font-size:12px; color:#aaa; border-bottom:1px solid #444;">Zones à exporter :</p>
-                    <label style="display:block; margin-bottom:3px;"><input type="checkbox" id="chk-z1" checked> <b>Zone -1</b> : <span id="count-z1" style="color:#fff">0</span></label>
-                    <label style="display:block; margin-bottom:3px;"><input type="checkbox" id="chk-z2" checked> <b>Zone 1-5</b> : <span id="count-z2" style="color:#fff">0</span></label>
-                    <label style="display:block;"><input type="checkbox" id="chk-z3" checked> <b>Zone 5-10</b> : <span id="count-z3" style="color:#fff">0</span></label>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <button onclick="window.plugin.shardstorm.exportToDrawTools()">🎨 RESWUE v2 (DrawTools)</button>
-                    <button onclick="window.plugin.shardstorm.exportToCSV()">📄 Fichier CSV (Excel)</button>
-                    <button onclick="window.plugin.shardstorm.exportToDispatch()">📦 Plugin Dispatch JSON</button>
-                </div>
-            </div>`;
-
-        window.dialog({
-            html: html,
-            id: 'shardstorm-export-menu',
-            title: 'Menu Export ShardStorm',
-            closeCallback: function() {
-                if (window.plugin.shardstorm.monitorInterval) { clearInterval(window.plugin.shardstorm.monitorInterval); window.plugin.shardstorm.monitorInterval = null; }
-            },
-            buttons: { 'Fermer': function() { $(this).dialog('close'); } }
+    // --- CSV GENERATOR ---
+    window.plugin.shardstorm.generateCSV = function(list, zoneName) {
+        var csvContent = "";
+        list.forEach(function(p) {
+            var teamStr = (p.team === 1 ? "RES" : (p.team === 2 ? "ENL" : "NEU"));
+            var safeName = '"' + p.name.replace(/"/g, '""') + '"';
+            csvContent += `${safeName},${p.lat},${p.lng},${p.guid},${teamStr},${zoneName},${p.dist}\n`;
         });
-
-        window.plugin.shardstorm.updateCounts();
-        window.plugin.shardstorm.monitorInterval = setInterval(window.plugin.shardstorm.updateCounts, 1000);
+        return csvContent;
     };
 
-    // --- 1. EXPORT DRAWTOOLS ---
+    window.plugin.shardstorm.exportFromList = function() {
+        var z1 = $('#list-chk-z1').prop('checked');
+        var z2 = $('#list-chk-z2').prop('checked');
+        var z3 = $('#list-chk-z3').prop('checked');
+        
+        var zonesData = window.plugin.shardstorm.scanPortals();
+        if (!zonesData) return;
+
+        var csvContent = "\uFEFFName,Latitude,Longitude,Guid,Team,Zone,Distance(m)\n";
+        var count = 0;
+
+        if(z1 && zonesData.z1.length) { csvContent += window.plugin.shardstorm.generateCSV(zonesData.z1, "Zone -1"); count += zonesData.z1.length; }
+        if(z2 && zonesData.z2.length) { csvContent += window.plugin.shardstorm.generateCSV(zonesData.z2, "Zone 1-5"); count += zonesData.z2.length; }
+        if(z3 && zonesData.z3.length) { csvContent += window.plugin.shardstorm.generateCSV(zonesData.z3, "Zone 5-10"); count += zonesData.z3.length; }
+
+        if(count === 0) { alert("Rien à exporter."); return; }
+
+        var dateStr = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
+        window.plugin.shardstorm.saveFile(csvContent, 'shardstorm_export_' + dateStr + '.csv', 'text/csv');
+    };
+
+    // --- EXPORT MENU GENERIC ---
+    window.plugin.shardstorm.exportMassCSV = function() {
+        // Exporte tout par défaut via le menu global
+        $('#list-chk-z1, #list-chk-z2, #list-chk-z3').prop('checked', true);
+        window.plugin.shardstorm.exportFromList();
+    };
+
+    // --- EXPORT DRAW TOOLS ---
     window.plugin.shardstorm.exportToDrawTools = function() {
         if (!window.plugin.drawTools) { alert('Draw Tools manquant.'); return; }
-        
         var z1 = $('#chk-z1').prop('checked');
         var z2 = $('#chk-z2').prop('checked');
         var z3 = $('#chk-z3').prop('checked');
-        if (!z1 && !z2 && !z3) { alert("Rien de sélectionné."); return; }
-
+        
         var latLng = window.plugin.shardstorm.currentLatLng;
         var s = window.plugin.shardstorm.settings;
         var zonesData = window.plugin.shardstorm.scanPortals();
@@ -257,142 +238,163 @@ function wrapper(plugin_info) {
             count++;
         };
 
-        if (z1) {
-            window.plugin.drawTools.drawnItems.addLayer(L.polygon(r1, { color: s.color1, fillColor: s.color1, fillOpacity: s.opacity, weight: 2 }));
-            zonesData.z1.forEach(addP);
-        }
-        if (z2) {
-            window.plugin.drawTools.drawnItems.addLayer(L.polygon([r5, r1], { color: s.color2, fill: false, weight: 2 }));
-            zonesData.z2.forEach(addP);
-        }
-        if (z3) {
-            window.plugin.drawTools.drawnItems.addLayer(L.polygon([r10, r5], { color: s.color3, fill: false, weight: 2 }));
-            zonesData.z3.forEach(addP);
-        }
+        if (z1) { window.plugin.drawTools.drawnItems.addLayer(L.polygon(r1, { color: s.color1, fillColor: s.color1, fillOpacity: s.opacity, weight: 2 })); zonesData.z1.forEach(addP); }
+        if (z2) { window.plugin.drawTools.drawnItems.addLayer(L.polygon([r5, r1], { color: s.color2, fill: false, weight: 2 })); zonesData.z2.forEach(addP); }
+        if (z3) { window.plugin.drawTools.drawnItems.addLayer(L.polygon([r10, r5], { color: s.color3, fill: false, weight: 2 })); zonesData.z3.forEach(addP); }
 
         window.plugin.drawTools.save();
         alert("Export DrawTools terminé !\n" + count + " portails ajoutés.");
     };
 
-    // --- 2. EXPORT CSV ---
-    window.plugin.shardstorm.exportToCSV = function() {
-        var z1 = $('#chk-z1').prop('checked');
-        var z2 = $('#chk-z2').prop('checked');
-        var z3 = $('#chk-z3').prop('checked');
-        var zonesData = window.plugin.shardstorm.scanPortals();
-        
-        var csvContent = "\uFEFFName,Latitude,Longitude,Guid,Team,Zone,Distance(m)\n";
-        var count = 0;
-
-        var addToCSV = function(list, zoneName) {
-            list.forEach(function(p) {
-                var teamStr = (p.team === 1 ? "RES" : (p.team === 2 ? "ENL" : "NEU"));
-                var safeName = '"' + p.name.replace(/"/g, '""') + '"';
-                csvContent += `${safeName},${p.lat},${p.lng},${p.guid},${teamStr},${zoneName},${p.dist}\n`;
-                count++;
-            });
-        };
-
-        if(z1) addToCSV(zonesData.z1, "Zone -1");
-        if(z2) addToCSV(zonesData.z2, "Zone 1-5");
-        if(z3) addToCSV(zonesData.z3, "Zone 5-10");
-
-        if(count === 0) { alert("Rien à exporter."); return; }
-
-        var dateStr = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
-        window.plugin.shardstorm.saveFile(csvContent, 'shardstorm_' + dateStr + '.csv', 'text/csv');
-    };
-
-    // --- 3. EXPORT DISPATCH ---
     window.plugin.shardstorm.exportToDispatch = function() {
-        var z1 = $('#chk-z1').prop('checked');
-        var z2 = $('#chk-z2').prop('checked');
-        var z3 = $('#chk-z3').prop('checked');
-        var zonesData = window.plugin.shardstorm.scanPortals();
-        
+        var z = window.plugin.shardstorm.scanPortals();
         var exportData = [];
-
-        var addToList = function(list, zoneName) {
-            list.forEach(function(p) {
-                exportData.push({
-                    title: p.name,
-                    lat: p.lat,
-                    lng: p.lng,
-                    guid: p.guid,
-                    team: (p.team === 1 ? "RES" : (p.team === 2 ? "ENL" : "NEU")),
-                    zone: zoneName
-                });
-            });
-        };
-
-        if(z1) addToList(zonesData.z1, "Zone -1");
-        if(z2) addToList(zonesData.z2, "Zone 1-5");
-        if(z3) addToList(zonesData.z3, "Zone 5-10");
-
-        if(exportData.length === 0) { alert("Rien à exporter."); return; }
-
+        var add = function(l, zn) { l.forEach(p => exportData.push({ title: p.name, lat: p.lat, lng: p.lng, guid: p.guid, team: (p.team===1?"RES":(p.team===2?"ENL":"NEU")), zone: zn })); };
+        add(z.z1, "Zone -1"); add(z.z2, "Zone 1-5"); add(z.z3, "Zone 5-10");
+        if(!exportData.length) { alert("Rien à exporter."); return; }
         var dateStr = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
         window.plugin.shardstorm.saveFile(JSON.stringify(exportData, null, 2), 'shardstorm_dispatch_' + dateStr + '.json', 'application/json');
     };
 
-    // --- UI LISTING ---
-    window.plugin.shardstorm.refreshList = function() {
-        var visibleTab = $('.shardstorm-tab-content:visible').attr('id');
-        if (visibleTab) {
-            var zoneId = visibleTab.replace('shardstorm-tab-', '');
-            $('#shardstorm-list-dialog').dialog('close');
-            window.plugin.shardstorm.listPortals();
-            setTimeout(function(){ window.plugin.shardstorm.switchTab(zoneId); }, 150);
+    // --- UI LISTING (AUTO UPDATE) ---
+    window.plugin.shardstorm.updateListContent = function() {
+        var z = window.plugin.shardstorm.scanPortals();
+        if (!z) return;
+        z.z1.sort((a,b)=>a.dist-b.dist); z.z2.sort((a,b)=>a.dist-b.dist); z.z3.sort((a,b)=>a.dist-b.dist);
+
+        $('#list-btn-z1').text('Zone -1 ('+z.z1.length+')');
+        $('#list-btn-z2').text('Zone 1-5 ('+z.z2.length+')');
+        $('#list-btn-z3').text('Zone 5-10 ('+z.z3.length+')');
+
+        var activeId = window.plugin.shardstorm.activeTab;
+        var listToRender = [];
+        var color = '#fff';
+        
+        if (activeId === 'z1') { listToRender = z.z1; color = window.plugin.shardstorm.settings.color1; }
+        else if (activeId === 'z2') { listToRender = z.z2; color = window.plugin.shardstorm.settings.color2; }
+        else if (activeId === 'z3') { listToRender = z.z3; color = window.plugin.shardstorm.settings.color3; }
+
+        var h = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+        if (listToRender.length === 0) {
+            h = '<p style="text-align:center; font-style:italic; padding:20px;">Aucun portail visible.<br>Activez "Force Load" et attendez.</p>';
+        } else {
+            listToRender.forEach(function(p) {
+                h += '<tr style="border-bottom:1px solid #222;">';
+                h += '<td style="padding:4px; color:#aaa; width:60px;">'+(p.dist<1000?p.dist+'m':(p.dist/1000).toFixed(1)+'km')+'</td>';
+                h += '<td style="padding:4px;"><a href="#" onclick="window.zoomToAndShowPortal(\''+p.guid+'\', ['+p.lat+','+p.lng+']);return false;" style="color:'+color+';'+(p.dist===0?'font-weight:bold':'')+'">'+p.name+'</a></td>';
+                h += '</tr>';
+            });
+            h += '</table>';
         }
+        $('#shardstorm-list-container').html(h);
+    };
+
+    window.plugin.shardstorm.switchTab = function(id) {
+        window.plugin.shardstorm.activeTab = id;
+        $('.shardstorm-tab-btn').css('border-bottom', '1px solid #444').css('background', '');
+        $('#list-btn-' + id).css('border-bottom', '2px solid #ffce00').css('background', '#222');
+        window.plugin.shardstorm.updateListContent();
     };
 
     window.plugin.shardstorm.listPortals = function() {
-        var z = window.plugin.shardstorm.scanPortals();
-        if (!z) { alert("Activez d'abord."); return; }
-        z.z1.sort((a,b)=>a.dist-b.dist); z.z2.sort((a,b)=>a.dist-b.dist); z.z3.sort((a,b)=>a.dist-b.dist);
+        if (!window.plugin.shardstorm.activeGuid) { alert("Activez d'abord."); return; }
 
         var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
         var statusColor = window.plugin.shardstorm.isForceLoading ? '#ffce00' : '#aaa';
         var statusText = window.plugin.shardstorm.isForceLoading ? 'Chargement forcé...' : 'Mode normal.';
 
-        var html = '<div id="shardstorm-list-tabs">';
-        
-        html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#222; padding:5px; border-radius:4px; border:1px solid #444;">';
-        html += '  <div style="flex:1;">';
-        html += '    <label style="color:#ffce00; font-weight:bold; cursor:pointer;"><input type="checkbox" class="shardstorm-chk-force" '+isChecked+' onchange="window.plugin.shardstorm.toggleForceLoad()"> 👁️ Force Load</label>';
-        html += '    <div class="shardstorm-force-status" style="font-size:10px; color:'+statusColor+'; margin-left:20px;">'+statusText+'</div>';
-        html += '  </div>';
-        html += '  <div><button onclick="window.plugin.shardstorm.refreshList()" style="padding:2px 8px; cursor:pointer;">🔄 Refresh</button></div>';
-        html += '</div>';
+        var html = `
+            <div id="shardstorm-list-wrapper" style="min-width:320px;">
+                <div style="display:flex; align-items:center; margin-bottom:10px; background:#222; padding:5px; border-radius:4px; border:1px solid #444;">
+                    <label style="color:#ffce00; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" class="shardstorm-chk-force" ${isChecked} onchange="window.plugin.shardstorm.toggleForceLoad()"> 👁️ Force Load
+                    </label>
+                    <div class="shardstorm-force-status" style="font-size:10px; color:${statusColor}; margin-left:15px;">${statusText}</div>
+                </div>
 
-        html += '<div style="display:flex;justify-content:space-around;padding-bottom:5px;border-bottom:1px solid #444;">';
-        html += '<button id="list-btn-z1" onclick="window.plugin.shardstorm.switchTab(\'z1\')" style="flex:1">Zone -1 ('+z.z1.length+')</button>';
-        html += '<button id="list-btn-z2" onclick="window.plugin.shardstorm.switchTab(\'z2\')" style="flex:1">Zone 1-5 ('+z.z2.length+')</button>';
-        html += '<button id="list-btn-z3" onclick="window.plugin.shardstorm.switchTab(\'z3\')" style="flex:1">Zone 5-10 ('+z.z3.length+')</button></div>';
-        
-        var mkList = function(id, list, col) {
-            var h = '<div id="shardstorm-tab-'+id+'" class="shardstorm-tab-content" style="display:none;">';
-            if (list.length > 0) h += '<div style="text-align:right;padding:4px;background:rgba(0,0,0,0.2);"><a href="#" onclick="window.plugin.shardstorm.exportToCSV();return false;" style="color:#fff;">📄 Exporter CSV</a></div>';
-            h += '<div style="max-height:300px;overflow-y:auto;"><table>';
-            list.forEach(function(p) {
-                h += '<tr><td style="color:#aaa;padding:2px 5px;">'+(p.dist<1000?p.dist+'m':(p.dist/1000).toFixed(1)+'km')+'</td>';
-                h += '<td><a href="#" style="color:'+col+';'+(p.dist===0?'font-weight:bold':'')+'" onclick="window.zoomToAndShowPortal(\''+p.guid+'\', ['+p.lat+','+p.lng+']);return false;">'+p.name+'</a></td></tr>';
-            });
-            return h + '</table></div></div>';
-        };
-        html += mkList('z1', z.z1, window.plugin.shardstorm.settings.color1);
-        html += mkList('z2', z.z2, window.plugin.shardstorm.settings.color2);
-        html += mkList('z3', z.z3, window.plugin.shardstorm.settings.color3);
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; background:#111; padding:5px; border:1px solid #333; border-radius:4px;">
+                    <div style="font-size:11px;">
+                        <label style="margin-right:5px;"><input type="checkbox" id="list-chk-z1" checked> Z-1</label>
+                        <label style="margin-right:5px;"><input type="checkbox" id="list-chk-z2" checked> Z1-5</label>
+                        <label><input type="checkbox" id="list-chk-z3" checked> Z5-10</label>
+                    </div>
+                    <button onclick="window.plugin.shardstorm.exportFromList()" style="padding:2px 8px; font-size:11px; cursor:pointer;">📄 CSV</button>
+                </div>
+
+                <div style="display:flex; justify-content:space-around; margin-bottom:5px;">
+                    <button id="list-btn-z1" class="shardstorm-tab-btn" onclick="window.plugin.shardstorm.switchTab('z1')" style="flex:1; border:none; border-bottom:1px solid #444; background:none; color:#ddd; cursor:pointer; padding:5px;">Zone -1</button>
+                    <button id="list-btn-z2" class="shardstorm-tab-btn" onclick="window.plugin.shardstorm.switchTab('z2')" style="flex:1; border:none; border-bottom:1px solid #444; background:none; color:#ddd; cursor:pointer; padding:5px;">Zone 1-5</button>
+                    <button id="list-btn-z3" class="shardstorm-tab-btn" onclick="window.plugin.shardstorm.switchTab('z3')" style="flex:1; border:none; border-bottom:1px solid #444; background:none; color:#ddd; cursor:pointer; padding:5px;">Zone 5-10</button>
+                </div>
+                
+                <div id="shardstorm-list-container" style="max-height:350px; overflow-y:auto; min-height:100px;">
+                    <p style="text-align:center; color:#aaa; margin-top:20px;">Chargement...</p>
+                </div>
+            </div>`;
         
         window.dialog({
-            html: html, id: 'shardstorm-list-dialog', title: 'Portails par Zone', width: 350,
-            closeCallback: function() { if (window.plugin.shardstorm.listInterval) clearInterval(window.plugin.shardstorm.listInterval); }
+            html: html, id: 'shardstorm-list-dialog', title: 'Portails (Live)', width: 350,
+            closeCallback: function() { 
+                if (window.plugin.shardstorm.listInterval) {
+                    clearInterval(window.plugin.shardstorm.listInterval);
+                    window.plugin.shardstorm.listInterval = null;
+                }
+            }
         });
-        window.plugin.shardstorm.listInterval = setInterval(window.plugin.shardstorm.updateCounts, 1000);
-        setTimeout(function(){ window.plugin.shardstorm.switchTab('z1'); }, 100);
+
+        window.plugin.shardstorm.switchTab('z1');
+        
+        // AUTO REFRESH : 2 secondes
+        window.plugin.shardstorm.listInterval = setInterval(function() {
+            window.plugin.shardstorm.updateListContent();
+        }, 2000);
     };
-    
-    window.plugin.shardstorm.switchTab = function(id) { $('.shardstorm-tab-content').hide(); $('#shardstorm-tab-'+id).show(); };
+
+    // --- UI EXPORT GLOBAL ---
+    window.plugin.shardstorm.updateCounts = function() {
+        var z = window.plugin.shardstorm.scanPortals();
+        if (z) {
+            $('#count-z1').text(z.z1.length);
+            $('#count-z2').text(z.z2.length);
+            $('#count-z3').text(z.z3.length);
+        }
+    };
+
+    window.plugin.shardstorm.openExportMenu = function() {
+        if (!window.plugin.shardstorm.activeGuid) { alert('Activez ShardStorm d\'abord.'); return; }
+        var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
+        var statusColor = window.plugin.shardstorm.isForceLoading ? '#ffce00' : '#aaa';
+        var statusText = window.plugin.shardstorm.isForceLoading ? 'Chargement forcé...' : 'Mode normal.';
+
+        var html = `
+            <div style="min-width:300px;">
+                <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px; border:1px solid #444;">
+                    <label style="color:#ffce00; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" class="shardstorm-chk-force" ${isChecked} onchange="window.plugin.shardstorm.toggleForceLoad()"> 👁️ Force Load
+                    </label>
+                    <div class="shardstorm-force-status" style="font-size:11px; color:${statusColor}; margin-left:20px;">${statusText}</div>
+                </div>
+                <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px; border:1px solid #444;">
+                    <p style="margin:0 0 5px 0; font-size:12px; color:#aaa; border-bottom:1px solid #444;">Zones à exporter :</p>
+                    <label style="display:block; margin-bottom:3px;"><input type="checkbox" id="chk-z1" checked> <b>Zone -1</b> : <span id="count-z1" style="color:#fff">0</span></label>
+                    <label style="display:block; margin-bottom:3px;"><input type="checkbox" id="chk-z2" checked> <b>Zone 1-5</b> : <span id="count-z2" style="color:#fff">0</span></label>
+                    <label style="display:block;"><input type="checkbox" id="chk-z3" checked> <b>Zone 5-10</b> : <span id="count-z3" style="color:#fff">0</span></label>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <a href="#" class="shardstorm-style-btn" onclick="window.plugin.shardstorm.exportToDrawTools(); return false;">🎨 RESWUE v2 (DrawTools)</a>
+                    <a href="#" class="shardstorm-style-btn" onclick="window.plugin.shardstorm.exportMassCSV(); return false;">📄 Fichier CSV (Excel)</a>
+                    <a href="#" class="shardstorm-style-btn" onclick="window.plugin.shardstorm.exportToDispatch(); return false;">📦 Plugin Dispatch JSON</a>
+                </div>
+            </div>`;
+
+        window.dialog({
+            html: html, id: 'shardstorm-export-menu', title: 'Menu Export ShardStorm',
+            closeCallback: function() { if (window.plugin.shardstorm.monitorInterval) clearInterval(window.plugin.shardstorm.monitorInterval); },
+            buttons: { 'Fermer': function() { $(this).dialog('close'); } }
+        });
+        window.plugin.shardstorm.updateCounts();
+        window.plugin.shardstorm.monitorInterval = setInterval(window.plugin.shardstorm.updateCounts, 1000);
+    };
 
     window.plugin.shardstorm.showSettings = function() {
         var s = window.plugin.shardstorm.settings;
@@ -403,51 +405,32 @@ function wrapper(plugin_info) {
         html += '<div>Opacité: <input type="range" min="0" max="1" step="0.05" id="sop" value="'+s.opacity+'"></div>';
         html += '<div>Bordure: <input type="range" min="0" max="10" step="1" id="sbw" value="'+s.borderWeight+'"></div></div>';
         window.dialog({ html: html, title: 'Options', buttons: { 'OK': function() { $(this).dialog('close'); } } });
-        
-        $('#sc1').on('change', function() { s.color1 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
-        $('#sc2').on('change', function() { s.color2 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
-        $('#sc3').on('change', function() { s.color3 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
-        $('#sop').on('input', function() { s.opacity = parseFloat(this.value); window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
-        $('#sbw').on('input', function() { s.borderWeight = parseInt(this.value); window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
+        $('#sc1').on('change', function() { s.color1 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.draw(); });
+        $('#sc2').on('change', function() { s.color2 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.draw(); });
+        $('#sc3').on('change', function() { s.color3 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.draw(); });
+        $('#sop').on('input', function() { s.opacity = parseFloat(this.value); window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.draw(); });
+        $('#sbw').on('input', function() { s.borderWeight = parseInt(this.value); window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.draw(); });
     };
-
-    window.plugin.shardstorm.redrawIfActive = function() { if (window.plugin.shardstorm.activeGuid) window.plugin.shardstorm.draw(); };
 
     window.plugin.shardstorm.updateUI = function() {
         var btn = $('#shardstorm-btn');
         if (btn.length) {
-            if (window.plugin.shardstorm.activeGuid) {
-                btn.text('ShardStorm: ON').css('color', '#ffce00');
-            } else {
-                btn.text('ShardStorm: Off').css('color', '#ffce00');
-            }
+            if (window.plugin.shardstorm.activeGuid) { btn.text('ShardStorm: ON').css('color', '#ffce00'); } 
+            else { btn.text('ShardStorm: Off').css('color', ''); }
         }
     };
 
-    // --- SIDEBAR UI (STYLE STANDARD IITC) ---
+    // --- SIDEBAR UI (STYLE NATIVE 1.6.0) ---
     window.plugin.shardstorm.addToSidebar = function() {
         if (!window.selectedPortal || $('#shardstorm-aside').length) return;
-        
-        // On utilise la structure native d'IITC <aside><a>...</a></aside>
-        // Cela garantit l'alignement standard avec les autres plugins.
         var aside = $('<aside id="shardstorm-aside"></aside>');
-        
         var createLink = function(text, fn, title) {
-            return $('<a>').text(text).attr({href:'#', title:title}).on('click', function(e){
-                e.preventDefault(); fn(); return false;
-            }).css({'margin-right': '5px'}); // Petit espacement natif
+            return $('<a>').text(text).attr({href:'#', title:title}).on('click', function(e){ e.preventDefault(); fn(); return false; }).css({'margin-right': '5px'});
         };
-
-        // On affiche les liens en ligne, simples
-        var btnToggle = createLink('ShardStorm: Off', window.plugin.shardstorm.toggle, 'Activer/Désactiver');
-        btnToggle.attr('id', 'shardstorm-btn');
-        
-        var btnList = createLink('📖 Liste', window.plugin.shardstorm.listPortals, 'Liste des portails');
-        var btnExport = createLink('🎨 Export', window.plugin.shardstorm.openExportMenu, 'Menu Export');
-        var btnConfig = createLink('⚙️ Config', window.plugin.shardstorm.showSettings, 'Configuration');
-
-        aside.append(btnToggle).append(btnList).append(btnExport).append(btnConfig);
-
+        aside.append(createLink('ShardStorm: Off', window.plugin.shardstorm.toggle, 'Activer').attr('id', 'shardstorm-btn'));
+        aside.append(createLink('📖 Liste', window.plugin.shardstorm.listPortals, 'Liste'));
+        aside.append(createLink('🎨 Export', window.plugin.shardstorm.openExportMenu, 'Menu Export'));
+        aside.append(createLink('⚙️ Config', window.plugin.shardstorm.showSettings, 'Config'));
         $('.linkdetails').append(aside);
         window.plugin.shardstorm.updateUI();
     };
@@ -462,12 +445,13 @@ function wrapper(plugin_info) {
         window.addLayerGroup('Zone 5-10', window.plugin.shardstorm.layers.zone3, true);
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
         
-        // CSS Minimal pour la liste (hover)
         $('<style>').prop('type', 'text/css').html(`
+            #shardstorm-export-menu .shardstorm-style-btn { display: block; padding: 10px; margin: 2px 0; background: rgba(8, 48, 78, 0.9); color: #ffce00 !important; border: 1px solid #20A8B1; text-align: center; font-weight: bold; cursor: pointer; text-decoration: none !important; }
+            #shardstorm-export-menu .shardstorm-style-btn:hover { background: rgba(8, 48, 78, 1); border-color: #ffce00; }
             .shardstorm-tab-content table tr:hover { background-color: rgba(255,255,255,0.1); }
         `).appendTo('head');
         
-        console.log('[ShardStorm] Plugin loaded v1.18.0 (Native Style)');
+        console.log('[ShardStorm] Plugin loaded v1.20.0 (Native Sidebar + Auto-Refresh + CSV Checkbox)');
     };
 
     setup.info = plugin_info;
