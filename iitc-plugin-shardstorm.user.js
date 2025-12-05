@@ -39,7 +39,7 @@ function wrapper(plugin_info) {
         borderWeight: 1, // Épaisseur des traits de délimitation
         color1: '#FF0000',
         color2: '#00FF00',
-        color3: '#0000FF'
+        color3: '#FF0000'
     };
 
     window.plugin.shardstorm.loadSettings = function() {
