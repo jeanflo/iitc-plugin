@@ -58,7 +58,7 @@ function wrapper(plugin_info) {
     // --- OUTIL MATHÉMATIQUE : Générer les points d'un cercle ---
     window.plugin.shardstorm.getCirclePoints = function(center, radiusMeters) {
         var points = [];
-        var count = 120; // Lissage
+        var count = 720; // Lissage
         var earthR = 6378137;
         var lat1 = (center.lat * Math.PI) / 180;
         var lon1 = (center.lng * Math.PI) / 180;
