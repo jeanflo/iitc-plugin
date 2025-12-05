@@ -37,7 +37,7 @@ function wrapper(plugin_info) {
         weight: 1,
         color1: '#FF0000', // Rouge
         color2: '#00FF00', // Vert
-        color3: '#0000FF'  // Bleu
+        color3: '#FF0000'  // Rouge
     };
 
     // Charger les paramètres
