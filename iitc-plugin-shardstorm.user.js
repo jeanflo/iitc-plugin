@@ -3,11 +3,11 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.27.3
+// @version        1.30.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Affiche les zones tactiques + Export + Traduction (Onglets colorés).
+// @description    Affiche les zones tactiques + Export + Traduction (Version partout).
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -19,12 +19,12 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312052330';
+    plugin_info.dateTimeVersion = '202312060200';
     plugin_info.pluginId = 'shardstorm';
 
     // --- INIT ---
     window.plugin.shardstorm = {};
-    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.27.0';
+    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.30.0';
     window.plugin.shardstorm.layers = { zone1: null, zone2: null, zone3: null };
     window.plugin.shardstorm.donuts = [];
     window.plugin.shardstorm.activeGuid = null;
@@ -45,11 +45,11 @@ function wrapper(plugin_info) {
             btn_list: "List", btn_export: "Export", btn_config: "Config",
             btn_on: "ShardStorm: ON", btn_off: "ShardStorm: OFF",
             title_activate: "Toggle ON/OFF",
-            z1: "Zone 0-1", z2: "Zone 1-5", z3: "Zone 5-10",
+            z1: "Zone 1", z2: "Zone 1-5", z3: "Zone 5-10",
             force_chk: "👁️ Force Load",
             status_loading: "Loading portals...", status_normal: "Normal mode.",
             exp_title: "Export Menu", exp_select: "Selection & Counts",
-            exp_btn_draw: "🎨 DrawTools", exp_btn_csv: "📄 CSV File (Excel)", exp_btn_json: "📦 JSON",
+            exp_btn_draw: "🎨 RESWUE v2 (DrawTools)", exp_btn_csv: "📄 CSV File (Excel)", exp_btn_json: "📦 Plugin Dispatch JSON",
             list_title: "Portals (Live)", list_refresh: "🔄 Refresh",
             list_no_portals: "No portals visible.<br>Enable 'Force Load' and wait.",
             list_loading: "Loading...",
@@ -65,11 +65,11 @@ function wrapper(plugin_info) {
             btn_list: "Liste", btn_export: "Export", btn_config: "Config",
             btn_on: "ShardStorm: ON", btn_off: "ShardStorm: OFF",
             title_activate: "Activer/Désactiver",
-            z1: "Zone 0-1", z2: "Zone 1-5", z3: "Zone 5-10",
+            z1: "Zone -1", z2: "Zone 1-5", z3: "Zone 5-10",
             force_chk: "👁️ Force Load",
             status_loading: "Chargement forcé...", status_normal: "Mode normal.",
             exp_title: "Menu Export", exp_select: "Sélection & Compteurs",
-            exp_btn_draw: "🎨 DrawTools", exp_btn_csv: "📄 Fichier CSV (Excel)", exp_btn_json: "📦 JSON",
+            exp_btn_draw: "🎨 RESWUE v2 (DrawTools)", exp_btn_csv: "📄 Fichier CSV (Excel)", exp_btn_json: "📦 Plugin Dispatch JSON",
             list_title: "Portails (Live)", list_refresh: "🔄 Refresh",
             list_no_portals: "Aucun portail visible.<br>Activez 'Force Load' et attendez.",
             list_loading: "Chargement...",
@@ -344,6 +344,11 @@ function wrapper(plugin_info) {
         $('#list-btn-z2').text(t('z2') + ' ('+z.z2.length+')').css('color', s.color2);
         $('#list-btn-z3').text(t('z3') + ' ('+z.z3.length+')').css('color', s.color3);
 
+        // CHECKBOXES EN COULEUR
+        $('#lbl-chk-z1').css('color', s.color1);
+        $('#lbl-chk-z2').css('color', s.color2);
+        $('#lbl-chk-z3').css('color', s.color3);
+
         var activeId = window.plugin.shardstorm.activeTab;
         var listToRender = [];
         var color = '#fff';
@@ -394,9 +399,9 @@ function wrapper(plugin_info) {
 
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; background:#111; padding:5px; border:1px solid #333; border-radius:4px;">
                     <div style="font-size:11px;">
-                        <label style="margin-right:5px;"><input type="checkbox" id="list-chk-z1" checked> ${t('z1')}</label>
-                        <label style="margin-right:5px;"><input type="checkbox" id="list-chk-z2" checked> ${t('z2')}</label>
-                        <label><input type="checkbox" id="list-chk-z3" checked> ${t('z3')}</label>
+                        <label id="lbl-chk-z1" style="margin-right:5px; color:${s.color1}"><input type="checkbox" id="list-chk-z1" checked> ${t('z1')}</label>
+                        <label id="lbl-chk-z2" style="margin-right:5px; color:${s.color2}"><input type="checkbox" id="list-chk-z2" checked> ${t('z2')}</label>
+                        <label id="lbl-chk-z3" style="color:${s.color3}"><input type="checkbox" id="list-chk-z3" checked> ${t('z3')}</label>
                     </div>
                     <button onclick="window.plugin.shardstorm.exportFromList()" style="padding:2px 8px; font-size:11px; cursor:pointer;">${t('csv_btn_list')}</button>
                 </div>
@@ -431,15 +436,24 @@ function wrapper(plugin_info) {
     // --- UI EXPORT GLOBAL ---
     window.plugin.shardstorm.updateCounts = function() {
         var z = window.plugin.shardstorm.scanPortals();
+        var t = window.plugin.shardstorm.t;
+        var s = window.plugin.shardstorm.settings;
+
         if (z) {
             $('#count-z1').text(z.z1.length);
             $('#count-z2').text(z.z2.length);
             $('#count-z3').text(z.z3.length);
+
+            // Couleurs aussi dans le menu export
+            $('#exp-lbl-z1').css('color', s.color1);
+            $('#exp-lbl-z2').css('color', s.color2);
+            $('#exp-lbl-z3').css('color', s.color3);
         }
     };
 
     window.plugin.shardstorm.openExportMenu = function() {
         var t = window.plugin.shardstorm.t;
+        var s = window.plugin.shardstorm.settings;
         if (!window.plugin.shardstorm.activeGuid) { alert(t('alert_activate')); return; }
 
         var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
@@ -456,9 +470,9 @@ function wrapper(plugin_info) {
                 </div>
                 <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px; border:1px solid #444;">
                     <p style="margin:0 0 5px 0; font-size:12px; color:#aaa; border-bottom:1px solid #444;">${t('exp_select')}</p>
-                    <label style="display:block; margin-bottom:3px;"><input type="checkbox" id="chk-z1" checked> <b>${t('z1')}</b> : <span id="count-z1" style="color:#fff">0</span></label>
-                    <label style="display:block; margin-bottom:3px;"><input type="checkbox" id="chk-z2" checked> <b>${t('z2')}</b> : <span id="count-z2" style="color:#fff">0</span></label>
-                    <label style="display:block;"><input type="checkbox" id="chk-z3" checked> <b>${t('z3')}</b> : <span id="count-z3" style="color:#fff">0</span></label>
+                    <label id="exp-lbl-z1" style="display:block; margin-bottom:3px; color:${s.color1}"><input type="checkbox" id="chk-z1" checked> <b>${t('z1')}</b> : <span id="count-z1" style="color:#fff">0</span></label>
+                    <label id="exp-lbl-z2" style="display:block; margin-bottom:3px; color:${s.color2}"><input type="checkbox" id="chk-z2" checked> <b>${t('z2')}</b> : <span id="count-z2" style="color:#fff">0</span></label>
+                    <label id="exp-lbl-z3" style="display:block; color:${s.color3}"><input type="checkbox" id="chk-z3" checked> <b>${t('z3')}</b> : <span id="count-z3" style="color:#fff">0</span></label>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     <a href="#" class="shardstorm-style-btn" onclick="window.plugin.shardstorm.exportToDrawTools(); return false;">${t('exp_btn_draw')}</a>
@@ -492,9 +506,9 @@ function wrapper(plugin_info) {
         html += '</select></div>';
 
         html += '<div style="margin-bottom:10px;">';
-        html += '<label>'+t('z1')+'</label> <input type="color" id="sc1" value="'+s.color1+'"> ';
-        html += '<label>'+t('z2')+'</label> <input type="color" id="sc2" value="'+s.color2+'"> ';
-        html += '<label>'+t('z3')+'</label> <input type="color" id="sc3" value="'+s.color3+'"></div>';
+        html += '<label style="color:'+s.color1+'">'+t('z1')+'</label> <input type="color" id="sc1" value="'+s.color1+'"> ';
+        html += '<label style="color:'+s.color2+'">'+t('z2')+'</label> <input type="color" id="sc2" value="'+s.color2+'"> ';
+        html += '<label style="color:'+s.color3+'">'+t('z3')+'</label> <input type="color" id="sc3" value="'+s.color3+'"></div>';
         html += '<div>'+t('set_opacity')+': <input type="range" min="0" max="1" step="0.05" id="sop" value="'+s.opacity+'"></div>';
         html += '<div>'+t('set_border')+': <input type="range" min="0" max="10" step="1" id="sbw" value="'+s.borderWeight+'"></div></div>';
 
