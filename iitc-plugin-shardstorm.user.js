@@ -3,7 +3,7 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.27.0
+// @version        1.27.1
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
@@ -31,11 +31,11 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.currentLatLng = null;
     window.plugin.shardstorm.currentListData = null;
     window.plugin.shardstorm.originalZoomFunc = null;
-    window.plugin.shardstorm.monitorInterval = null; 
+    window.plugin.shardstorm.monitorInterval = null;
     window.plugin.shardstorm.listInterval = null;
     window.plugin.shardstorm.isForceLoading = false;
     window.plugin.shardstorm.activeTab = 'z1';
-    
+
     // VALEURS RÉELLES
     window.plugin.shardstorm.consts = { r1: 1000, r2: 5000, r3: 10000 };
 
@@ -84,13 +84,13 @@ function wrapper(plugin_info) {
     };
 
     // --- SETTINGS ---
-    window.plugin.shardstorm.settings = { 
-        lang: 'en', 
-        opacity: 0.1, 
-        borderWeight: 1, 
-        color1: '#FF0000', 
-        color2: '#FFFFFF', 
-        color3: '#FF0000' 
+    window.plugin.shardstorm.settings = {
+        lang: 'en',
+        opacity: 0.1,
+        borderWeight: 1,
+        color1: '#FF0000',
+        color2: '#FFFFFF',
+        color3: '#FF0000'
     };
 
     window.plugin.shardstorm.loadSettings = function() {
@@ -148,7 +148,7 @@ function wrapper(plugin_info) {
         var guid = window.plugin.shardstorm.activeGuid;
         if (!guid) return;
         window.plugin.shardstorm.clearLayersOnly();
-        
+
         var p = window.portals[guid];
         if (!p) return;
         var latLng = p.getLatLng();
@@ -258,7 +258,7 @@ function wrapper(plugin_info) {
         var z2 = $('#list-chk-z2').prop('checked');
         var z3 = $('#list-chk-z3').prop('checked');
         var t = window.plugin.shardstorm.t;
-        
+
         var zonesData = window.plugin.shardstorm.scanPortals();
         if (!zonesData) return;
 
@@ -287,14 +287,14 @@ function wrapper(plugin_info) {
         var z1 = $('#chk-z1').prop('checked');
         var z2 = $('#chk-z2').prop('checked');
         var z3 = $('#chk-z3').prop('checked');
-        
+
         var latLng = window.plugin.shardstorm.currentLatLng;
         var s = window.plugin.shardstorm.settings;
-        var c = window.plugin.shardstorm.consts; 
+        var c = window.plugin.shardstorm.consts;
         var zonesData = window.plugin.shardstorm.scanPortals();
         var count = 0;
 
-        var makePts = function(r) { return window.plugin.shardstorm.getCirclePoints(latLng, r); }; 
+        var makePts = function(r) { return window.plugin.shardstorm.getCirclePoints(latLng, r); };
         var r1 = makePts(c.r1); var r5 = makePts(c.r2); var r10 = makePts(c.r3);
 
         var addP = function(p) {
@@ -317,7 +317,7 @@ function wrapper(plugin_info) {
         var z2 = $('#chk-z2').prop('checked');
         var z3 = $('#chk-z3').prop('checked');
         var z = window.plugin.shardstorm.scanPortals();
-        
+
         var exportData = [];
         var add = function(l, zn) { l.forEach(p => exportData.push({ title: p.name, lat: p.lat, lng: p.lng, guid: p.guid, team: (p.team===1?"RES":(p.team===2?"ENL":"NEU")), zone: zn })); };
 
@@ -347,7 +347,7 @@ function wrapper(plugin_info) {
         var activeId = window.plugin.shardstorm.activeTab;
         var listToRender = [];
         var color = '#fff';
-        
+
         if (activeId === 'z1') { listToRender = z.z1; color = s.color1; }
         else if (activeId === 'z2') { listToRender = z.z2; color = s.color2; }
         else if (activeId === 'z3') { listToRender = z.z3; color = s.color3; }
@@ -406,15 +406,15 @@ function wrapper(plugin_info) {
                     <button id="list-btn-z2" class="shardstorm-tab-btn" onclick="window.plugin.shardstorm.switchTab('z2')" style="flex:1; border:none; border-bottom:1px solid #444; background:none; color:${s.color2}; cursor:pointer; padding:5px;">${t('z2')}</button>
                     <button id="list-btn-z3" class="shardstorm-tab-btn" onclick="window.plugin.shardstorm.switchTab('z3')" style="flex:1; border:none; border-bottom:1px solid #444; background:none; color:${s.color3}; cursor:pointer; padding:5px;">${t('z3')}</button>
                 </div>
-                
+
                 <div id="shardstorm-list-container" style="max-height:350px; overflow-y:auto; min-height:100px;">
                     <p style="text-align:center; color:#aaa; margin-top:20px;">${t('list_loading')}</p>
                 </div>
             </div>`;
-        
+
         window.dialog({
-            html: html, id: 'shardstorm-list-dialog', title: t('list_title'), width: 350,
-            closeCallback: function() { 
+            html: html, id: 'shardstorm-list-dialog', title: t('list_title') + ' v' + window.plugin.shardstorm.version, width: 350,
+            closeCallback: function() {
                 if (window.plugin.shardstorm.listInterval) {
                     clearInterval(window.plugin.shardstorm.listInterval);
                     window.plugin.shardstorm.listInterval = null;
@@ -479,7 +479,7 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.showSettings = function() {
         var s = window.plugin.shardstorm.settings;
         var t = window.plugin.shardstorm.t;
-        
+
         var isEn = (s.lang === 'en') ? 'selected' : '';
         var isFr = (s.lang === 'fr') ? 'selected' : '';
 
@@ -497,12 +497,12 @@ function wrapper(plugin_info) {
         html += '<label>'+t('z3')+'</label> <input type="color" id="sc3" value="'+s.color3+'"></div>';
         html += '<div>'+t('set_opacity')+': <input type="range" min="0" max="1" step="0.05" id="sop" value="'+s.opacity+'"></div>';
         html += '<div>'+t('set_border')+': <input type="range" min="0" max="10" step="1" id="sbw" value="'+s.borderWeight+'"></div></div>';
-        
+
         window.dialog({ html: html, title: t('set_title') + ' v' + window.plugin.shardstorm.version, buttons: { 'OK': function() { $(this).dialog('close'); } } });
-        
-        $('#shardstorm-lang-select').on('change', function() { 
-            s.lang = this.value; 
-            window.plugin.shardstorm.saveSettings(); 
+
+        $('#shardstorm-lang-select').on('change', function() {
+            s.lang = this.value;
+            window.plugin.shardstorm.saveSettings();
             $(this).closest('.ui-dialog-content').dialog('close');
             setTimeout(function(){ window.plugin.shardstorm.showSettings(); }, 100);
             window.plugin.shardstorm.updateUI();
@@ -532,10 +532,10 @@ function wrapper(plugin_info) {
     // --- SIDEBAR UI (STYLE NATIVE 1.6.0) ---
     window.plugin.shardstorm.addToSidebar = function() {
         if (!window.selectedPortal || $('#shardstorm-aside').length) return;
-        
+
         var t = window.plugin.shardstorm.t;
         var aside = $('<aside id="shardstorm-aside"></aside>');
-        
+
         var createLink = function(text, fn, title, id) {
             return $('<a>').text(text).attr({href:'#', title:title, id: id}).on('click', function(e){
                 e.preventDefault(); fn(); return false;
@@ -560,18 +560,18 @@ function wrapper(plugin_info) {
         window.addLayerGroup(window.plugin.shardstorm.t('z2'), window.plugin.shardstorm.layers.zone2, true);
         window.addLayerGroup(window.plugin.shardstorm.t('z3'), window.plugin.shardstorm.layers.zone3, true);
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
-        
+
         // CHECK FACTION
         if (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') {
             window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
         }
-        
+
         $('<style>').prop('type', 'text/css').html(`
             #shardstorm-export-menu .shardstorm-style-btn { display: block; padding: 10px; margin: 2px 0; background: rgba(8, 48, 78, 0.9); color: #ffce00 !important; border: 1px solid #20A8B1; text-align: center; font-weight: bold; cursor: pointer; text-decoration: none !important; }
             #shardstorm-export-menu .shardstorm-style-btn:hover { background: rgba(8, 48, 78, 1); border-color: #ffce00; }
             .shardstorm-tab-content table tr:hover { background-color: rgba(255,255,255,0.1); }
         `).appendTo('head');
-        
+
         console.log('[ShardStorm] Plugin loaded v' + window.plugin.shardstorm.version);
     };
 
