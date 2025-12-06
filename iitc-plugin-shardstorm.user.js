@@ -3,7 +3,7 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.27.1
+// @version        1.27.2
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
@@ -45,7 +45,7 @@ function wrapper(plugin_info) {
             btn_list: "List", btn_export: "Export", btn_config: "Config",
             btn_on: "ShardStorm: ON", btn_off: "ShardStorm: OFF",
             title_activate: "Toggle ON/OFF",
-            z1: "Zone 1", z2: "Zone 1-5", z3: "Zone 5-10",
+            z1: "Zone 0-1", z2: "Zone 1-5", z3: "Zone 5-10",
             force_chk: "👁️ Force Load",
             status_loading: "Loading portals...", status_normal: "Normal mode.",
             exp_title: "Export Menu", exp_select: "Selection & Counts",
@@ -65,7 +65,7 @@ function wrapper(plugin_info) {
             btn_list: "Liste", btn_export: "Export", btn_config: "Config",
             btn_on: "ShardStorm: ON", btn_off: "ShardStorm: OFF",
             title_activate: "Activer/Désactiver",
-            z1: "Zone -1", z2: "Zone 1-5", z3: "Zone 5-10",
+            z1: "Zone 0-1", z2: "Zone 1-5", z3: "Zone 5-10",
             force_chk: "👁️ Force Load",
             status_loading: "Chargement forcé...", status_normal: "Mode normal.",
             exp_title: "Menu Export", exp_select: "Sélection & Compteurs",
