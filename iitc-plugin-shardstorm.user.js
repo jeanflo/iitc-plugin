@@ -3,11 +3,11 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.33.0
+// @version        1.36.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Affiche les zones tactiques + Injection Directe DrawTools pour ResWue.
+// @description    Affiche les zones tactiques + Injection Hybride Configurable.
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -19,12 +19,12 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312080500';
+    plugin_info.dateTimeVersion = '202312080800';
     plugin_info.pluginId = 'shardstorm';
 
     // --- INIT ---
     window.plugin.shardstorm = {};
-    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.33.0';
+    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.36.0';
     window.plugin.shardstorm.layers = { zone1: null, zone2: null, zone3: null };
     window.plugin.shardstorm.activeGuid = null;
     window.plugin.shardstorm.currentLatLng = null;
@@ -53,11 +53,12 @@ function wrapper(plugin_info) {
             list_no_portals: "No portals visible.<br>Enable 'Force Load' and wait.",
             list_loading: "Loading...",
             set_title: "Settings", set_lang: "Language", set_opacity: "Opacity", set_border: "Border",
+            set_radius: "Dot Radius (m)", // Traduction EN
             alert_activate: "Please activate ShardStorm on a portal first.",
             alert_no_sel: "Nothing selected.", alert_no_data: "No data to export.",
             alert_draw_missing: "Draw Tools plugin is missing! Install it to use this feature.",
             export_done: "Added to DrawTools layer (Standard format).",
-            inject_done: "✅ SUCCESS!\nZones and Portals injected into DrawTools.\n\nNow open ResWue and import from DrawTools.",
+            inject_done: "✅ SUCCESS!\nZones + Markers + Color dots injected.\n\nNow open ResWue and import from DrawTools.",
             csv_name: "Name", csv_team: "Team", csv_zone: "Zone", csv_dist: "Distance(m)",
             csv_btn_list: "📄 Export CSV"
         },
@@ -75,11 +76,12 @@ function wrapper(plugin_info) {
             list_no_portals: "Aucun portail visible.<br>Activez 'Force Load' et attendez.",
             list_loading: "Chargement...",
             set_title: "Configuration", set_lang: "Langue", set_opacity: "Opacité", set_border: "Bordure",
+            set_radius: "Rayon des points (m)", // Traduction FR
             alert_activate: "Activez ShardStorm d'abord.",
             alert_no_sel: "Rien de sélectionné.", alert_no_data: "Rien à exporter.",
             alert_draw_missing: "Le plugin Draw Tools est manquant ! Installez-le pour utiliser cette fonction.",
             export_done: "Ajouté au calque DrawTools (Format standard).",
-            inject_done: "✅ SUCCÈS !\nZones et Portails injectés dans DrawTools.\n\nOuvrez maintenant ResWue et importez depuis DrawTools.",
+            inject_done: "✅ SUCCÈS !\nZones + Marqueurs + Points couleur injectés.\n\nOuvrez ResWue et importez depuis DrawTools.",
             csv_name: "Nom", csv_team: "Equipe", csv_zone: "Zone", csv_dist: "Distance(m)",
             csv_btn_list: "📄 Exporter CSV"
         }
@@ -90,6 +92,7 @@ function wrapper(plugin_info) {
         lang: 'en',
         opacity: 0.1,
         borderWeight: 1,
+        markerRadius: 10, // NOUVEAU PARAMÈTRE PAR DÉFAUT
         color1: '#FF0000',
         color2: '#FFFFFF',
         color3: '#FF0000'
@@ -293,7 +296,7 @@ function wrapper(plugin_info) {
         window.plugin.shardstorm.saveFile(JSON.stringify(exportData, null, 2), 'shardstorm_dispatch_' + dateStr + '.json', 'application/json');
     };
 
-    // --- EXPORT: DRAWTOOLS NATIVE (Standard IITC) ---
+    // --- EXPORT: DRAWTOOLS NATIVE ---
     window.plugin.shardstorm.exportToDrawTools = function() {
         var t = window.plugin.shardstorm.t;
         if (!window.plugin.drawTools) { alert(t('alert_draw_missing')); return; }
@@ -326,11 +329,10 @@ function wrapper(plugin_info) {
     };
 
     // --- EXPORT TOUT-EN-UN RESWUE -> INJECTION DIRECTE ---
-    // Au lieu de copier-coller, on injecte directement via l'API de DrawTools
     window.plugin.shardstorm.injectIntoDrawTools = function() {
         var t = window.plugin.shardstorm.t;
+        var s = window.plugin.shardstorm.settings; // Pour récupérer le rayon
         
-        // Vérification de la présence de DrawTools et de la fonction import
         if (!window.plugin.drawTools || typeof window.plugin.drawTools.import !== 'function') { 
             alert(t('alert_draw_missing')); 
             return; 
@@ -340,12 +342,9 @@ function wrapper(plugin_info) {
         var z2 = $('#chk-z2').prop('checked');
         var z3 = $('#chk-z3').prop('checked');
         var latLng = window.plugin.shardstorm.currentLatLng;
-        var s = window.plugin.shardstorm.settings;
         var c = window.plugin.shardstorm.consts;
 
-        // Scan des portails pour l'export marqueurs
         var zonesData = window.plugin.shardstorm.scanPortals();
-
         var toObj = function(pt) { return {lat: pt[0], lng: pt[1]}; };
         var listToObjs = function(list) { return list.map(toObj); };
 
@@ -355,13 +354,24 @@ function wrapper(plugin_info) {
 
         var outputArray = [];
 
-        // Helper pour ajouter les marqueurs
+        // MODIFICATION v1.36.0 : Utilise s.markerRadius (défaut 10m)
         var addMarkers = function(list, color) {
+            var radius = s.markerRadius || 10;
             list.forEach(function(p) {
                 outputArray.push({
                     type: "marker",
                     latLng: { lat: p.lat, lng: p.lng },
                     color: color,
+                    title: p.name
+                });
+                outputArray.push({
+                    type: "circle",
+                    latLng: { lat: p.lat, lng: p.lng },
+                    radius: radius, // Taille configurable
+                    color: color,
+                    weight: 2,
+                    fillColor: color,
+                    fillOpacity: 1,
                     title: p.name
                 });
             });
@@ -389,8 +399,6 @@ function wrapper(plugin_info) {
 
         if (!outputArray.length) { alert(t('alert_no_data')); return; }
 
-        // --- INJECTION MAGIQUE ---
-        // On utilise la fonction d'import de DrawTools pour "simuler" un import manuel
         window.plugin.drawTools.import(outputArray);
         window.plugin.drawTools.save();
         
@@ -545,8 +553,13 @@ function wrapper(plugin_info) {
         html += '<label style="color:'+s.color2+'">'+t('z2')+'</label> <input type="color" id="sc2" value="'+s.color2+'"> ';
         html += '<label style="color:'+s.color3+'">'+t('z3')+'</label> <input type="color" id="sc3" value="'+s.color3+'"></div>';
         html += '<div>'+t('set_opacity')+': <input type="range" min="0" max="1" step="0.05" id="sop" value="'+s.opacity+'"></div>';
+        
+        // --- NOUVEAU SLIDER RAYON ---
+        html += '<div>'+t('set_radius')+': <input type="range" min="1" max="50" step="1" id="srad" value="'+(s.markerRadius||10)+'"> <span id="srad-val" style="font-size:11px; color:#aaa;">'+(s.markerRadius||10)+'m</span></div>';
+        
         html += '<div>'+t('set_border')+': <input type="range" min="0" max="10" step="1" id="sbw" value="'+s.borderWeight+'"></div></div>';
         window.dialog({ html: html, title: t('set_title') + ' v' + window.plugin.shardstorm.version, buttons: { 'OK': function() { $(this).dialog('close'); } } });
+        
         $('#shardstorm-lang-select').on('change', function() {
             s.lang = this.value; window.plugin.shardstorm.saveSettings();
             $(this).closest('.ui-dialog-content').dialog('close');
@@ -557,6 +570,14 @@ function wrapper(plugin_info) {
         $('#sc2').on('change', function() { s.color2 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
         $('#sc3').on('change', function() { s.color3 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
         $('#sop').on('input', function() { s.opacity = parseFloat(this.value); window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
+        
+        // Listener du slider rayon
+        $('#srad').on('input', function() { 
+            s.markerRadius = parseInt(this.value); 
+            $('#srad-val').text(s.markerRadius + 'm');
+            window.plugin.shardstorm.saveSettings(); 
+        });
+
         $('#sbw').on('input', function() { s.borderWeight = parseInt(this.value); window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
     };
 
