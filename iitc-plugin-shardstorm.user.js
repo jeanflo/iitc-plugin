@@ -3,11 +3,11 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.38.0
+// @version        1.42.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Affiche les zones tactiques + Injection Configurable (Points optionnels).
+// @description    Affiche les zones tactiques + Injection Stable ResWue.
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -19,12 +19,12 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312081000';
+    plugin_info.dateTimeVersion = '202312081400';
     plugin_info.pluginId = 'shardstorm';
 
     // --- INIT ---
     window.plugin.shardstorm = {};
-    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.38.0';
+    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.42.0';
     window.plugin.shardstorm.layers = { zone1: null, zone2: null, zone3: null };
     window.plugin.shardstorm.activeGuid = null;
     window.plugin.shardstorm.currentLatLng = null;
@@ -47,6 +47,9 @@ function wrapper(plugin_info) {
             force_chk: "👁️ Force Load",
             status_loading: "Loading portals...", status_normal: "Normal mode.",
             exp_title: "Export Menu", exp_select: "Selection & Counts",
+            exp_content: "Injection Content",
+            exp_chk_poly: "Zones (Polygons)",
+            exp_chk_mark: "Portals (Markers)",
             exp_btn_csv: "📄 CSV File (Excel)", exp_btn_json: "📦 JSON",
             exp_btn_inject: "🎨 DrawTools / ResWue",
             list_title: "Portals (Live)", list_refresh: "🔄 Refresh",
@@ -54,11 +57,11 @@ function wrapper(plugin_info) {
             list_loading: "Loading...",
             set_title: "Settings", set_lang: "Language", set_opacity: "Opacity", set_border: "Border",
             set_radius: "Dot Radius (m)",
-            set_dots: "Add color dots (ResWue Fix)", // Option EN
+            set_dots: "Add color dots (ResWue Fix)",
             alert_activate: "Please activate ShardStorm on a portal first.",
             alert_no_sel: "Nothing selected.", alert_no_data: "No data to export.",
             alert_draw_missing: "Draw Tools plugin is missing! Install it to use this feature.",
-            inject_done: "✅ SUCCESS!\nData injected into DrawTools.\n\nNow open ResWue and import from DrawTools.",
+            inject_done: "✅ SUCCESS!\nSelected data injected into DrawTools.\n\nNow open ResWue and import from DrawTools.",
             csv_name: "Name", csv_team: "Team", csv_zone: "Zone", csv_dist: "Distance(m)",
             csv_btn_list: "📄 Export CSV"
         },
@@ -70,6 +73,9 @@ function wrapper(plugin_info) {
             force_chk: "👁️ Force Load",
             status_loading: "Chargement forcé...", status_normal: "Mode normal.",
             exp_title: "Menu Export", exp_select: "Sélection & Compteurs",
+            exp_content: "Contenu de l'injection",
+            exp_chk_poly: "Zones (Polygones)",
+            exp_chk_mark: "Portails (Marqueurs)",
             exp_btn_csv: "📄 Fichier CSV (Excel)", exp_btn_json: "📦 JSON",
             exp_btn_inject: "🎨 DrawTools / ResWue",
             list_title: "Portails (Live)", list_refresh: "🔄 Refresh",
@@ -77,11 +83,11 @@ function wrapper(plugin_info) {
             list_loading: "Chargement...",
             set_title: "Configuration", set_lang: "Langue", set_opacity: "Opacité", set_border: "Bordure",
             set_radius: "Rayon des points (m)",
-            set_dots: "Ajouter petits points couleur (Fix ResWue)", // Option FR
+            set_dots: "Ajouter petits points couleur (Fix ResWue)",
             alert_activate: "Activez ShardStorm d'abord.",
             alert_no_sel: "Rien de sélectionné.", alert_no_data: "Rien à exporter.",
             alert_draw_missing: "Le plugin Draw Tools est manquant ! Installez-le pour utiliser cette fonction.",
-            inject_done: "✅ SUCCÈS !\nDonnées injectées dans DrawTools.\n\nOuvrez ResWue et importez depuis DrawTools.",
+            inject_done: "✅ SUCCÈS !\nDonnées sélectionnées injectées dans DrawTools.\n\nOuvrez ResWue et importez depuis DrawTools.",
             csv_name: "Nom", csv_team: "Equipe", csv_zone: "Zone", csv_dist: "Distance(m)",
             csv_btn_list: "📄 Exporter CSV"
         }
@@ -93,7 +99,7 @@ function wrapper(plugin_info) {
         opacity: 0.1,
         borderWeight: 1,
         markerRadius: 10,
-        addSmallCircles: false, // DÉSACTIVÉ PAR DÉFAUT
+        addSmallCircles: false,
         color1: '#FF0000',
         color2: '#FFFFFF',
         color3: '#FF0000'
@@ -298,6 +304,7 @@ function wrapper(plugin_info) {
     };
 
     // --- MAIN FUNCTION: INJECTION DRAWTOOLS (POUR RESWUE) ---
+    // Retour à la méthode d'import standard (stable)
     window.plugin.shardstorm.injectIntoDrawTools = function() {
         var t = window.plugin.shardstorm.t;
         var s = window.plugin.shardstorm.settings;
@@ -307,9 +314,16 @@ function wrapper(plugin_info) {
             return; 
         }
 
+        // Récupération des choix de l'utilisateur (depuis le menu Export)
         var z1 = $('#chk-z1').prop('checked');
         var z2 = $('#chk-z2').prop('checked');
         var z3 = $('#chk-z3').prop('checked');
+        
+        var incPoly = $('#chk-inc-poly').prop('checked');
+        var incMark = $('#chk-inc-mark').prop('checked');
+
+        if (!incPoly && !incMark) { alert(t('alert_no_sel')); return; }
+
         var latLng = window.plugin.shardstorm.currentLatLng;
         var c = window.plugin.shardstorm.consts;
 
@@ -334,7 +348,7 @@ function wrapper(plugin_info) {
                     title: p.name
                 });
                 
-                // 2. Cercle couleur (SI OPTION COCHÉE)
+                // 2. Cercle couleur (SI OPTION COCHÉE DANS CONFIG)
                 if (s.addSmallCircles) {
                     outputArray.push({
                         type: "circle",
@@ -352,22 +366,22 @@ function wrapper(plugin_info) {
 
         // --- ZONE 1 ---
         if (z1) {
-            outputArray.push({ type: "polygon", color: s.color1, latLngs: r1, title: t('z1') });
-            if (zonesData && zonesData.z1) addMarkers(zonesData.z1, s.color1);
+            if (incPoly) outputArray.push({ type: "polygon", color: s.color1, latLngs: r1, title: t('z1') });
+            if (incMark && zonesData && zonesData.z1) addMarkers(zonesData.z1, s.color1);
         }
 
         // --- ZONE 2 ---
         if (z2) {
             var stitchedZ2 = [].concat(r5, [r5[0]], [r1[0]], r1, [r1[0]], [r5[0]]);
-            outputArray.push({ type: "polygon", color: s.color2, latLngs: stitchedZ2, title: t('z2') });
-            if (zonesData && zonesData.z2) addMarkers(zonesData.z2, s.color2);
+            if (incPoly) outputArray.push({ type: "polygon", color: s.color2, latLngs: stitchedZ2, title: t('z2') });
+            if (incMark && zonesData && zonesData.z2) addMarkers(zonesData.z2, s.color2);
         }
 
         // --- ZONE 3 ---
         if (z3) {
             var stitchedZ3 = [].concat(r10, [r10[0]], [r5[0]], r5, [r5[0]], [r10[0]]);
-            outputArray.push({ type: "polygon", color: s.color3, latLngs: stitchedZ3, title: t('z3') });
-            if (zonesData && zonesData.z3) addMarkers(zonesData.z3, s.color3);
+            if (incPoly) outputArray.push({ type: "polygon", color: s.color3, latLngs: stitchedZ3, title: t('z3') });
+            if (incMark && zonesData && zonesData.z3) addMarkers(zonesData.z3, s.color3);
         }
 
         if (!outputArray.length) { alert(t('alert_no_data')); return; }
@@ -493,6 +507,13 @@ function wrapper(plugin_info) {
                     <label id="exp-lbl-z2" style="display:block; margin-bottom:3px; color:${s.color2}"><input type="checkbox" id="chk-z2" checked> <b>${t('z2')}</b> : <span id="count-z2" style="color:#fff">0</span></label>
                     <label id="exp-lbl-z3" style="display:block; color:${s.color3}"><input type="checkbox" id="chk-z3" checked> <b>${t('z3')}</b> : <span id="count-z3" style="color:#fff">0</span></label>
                 </div>
+                
+                <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px; border:1px solid #444;">
+                    <p style="margin:0 0 5px 0; font-size:12px; color:#aaa; border-bottom:1px solid #444;">${t('exp_content')}</p>
+                    <label style="margin-right:15px; cursor:pointer;"><input type="checkbox" id="chk-inc-poly" checked> ${t('exp_chk_poly')}</label>
+                    <label style="cursor:pointer;"><input type="checkbox" id="chk-inc-mark" checked> ${t('exp_chk_mark')}</label>
+                </div>
+
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     <a href="#" class="shardstorm-style-btn" onclick="window.plugin.shardstorm.injectIntoDrawTools(); return false;">${t('exp_btn_inject')}</a>
                     <a href="#" class="shardstorm-style-btn" onclick="window.plugin.shardstorm.exportMassCSV(); return false;">${t('exp_btn_csv')}</a>
