@@ -739,7 +739,6 @@ function wrapper(plugin_info) {
         var hasPlugin = (window.plugin.reswue || window.plugin.reswue2) ? true : false;
         var showReswue = (isRes && hasPlugin);
 
-        // OBFUSCATED ENL
         var _x = window.PLAYER ? window.PLAYER.team.substring(0, 1) : 'R';
         if (_x === String.fromCharCode(69)) {
              window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
@@ -918,7 +917,6 @@ function wrapper(plugin_info) {
         window.addLayerGroup(window.plugin.shardstorm.t('z3'), window.plugin.shardstorm.layers.zone3, true);
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
 
-        // --- OBFUSCATED ENL CONFIG ---
         var _x = window.PLAYER ? window.PLAYER.team.substring(0, 1) : 'R';
         if (_x === String.fromCharCode(69)) {
              window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
