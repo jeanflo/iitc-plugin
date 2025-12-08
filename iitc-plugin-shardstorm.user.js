@@ -3,7 +3,7 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.30.1
+// @version        1.30.2
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
@@ -49,7 +49,7 @@ function wrapper(plugin_info) {
             force_chk: "👁️ Force Load",
             status_loading: "Loading portals...", status_normal: "Normal mode.",
             exp_title: "Export Menu", exp_select: "Selection & Counts",
-            exp_btn_draw: "🎨 RESWUE v2 (DrawTools)", exp_btn_csv: "📄 CSV File (Excel)", exp_btn_json: "📦 Plugin Dispatch JSON",
+            exp_btn_draw: "🎨 DrawTools", exp_btn_csv: "📄 CSV File (Excel)", exp_btn_json: "📦 JSON",
             list_title: "Portals (Live)", list_refresh: "🔄 Refresh",
             list_no_portals: "No portals visible.<br>Enable 'Force Load' and wait.",
             list_loading: "Loading...",
@@ -69,7 +69,7 @@ function wrapper(plugin_info) {
             force_chk: "👁️ Force Load",
             status_loading: "Chargement forcé...", status_normal: "Mode normal.",
             exp_title: "Menu Export", exp_select: "Sélection & Compteurs",
-            exp_btn_draw: "🎨 RESWUE v2 (DrawTools)", exp_btn_csv: "📄 Fichier CSV (Excel)", exp_btn_json: "📦 Plugin Dispatch JSON",
+            exp_btn_draw: "🎨 DrawTools", exp_btn_csv: "📄 Fichier CSV (Excel)", exp_btn_json: "📦 JSON",
             list_title: "Portails (Live)", list_refresh: "🔄 Refresh",
             list_no_portals: "Aucun portail visible.<br>Activez 'Force Load' et attendez.",
             list_loading: "Chargement...",
