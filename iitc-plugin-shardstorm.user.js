@@ -3,11 +3,11 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.62.0
+// @version        1.66.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Zones tactiques
+// @description    Zones tactiques + Envoi ResWue Séquentiel (Zone par Zone).
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -19,12 +19,12 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312091000';
+    plugin_info.dateTimeVersion = '202312091400';
     plugin_info.pluginId = 'shardstorm';
 
     // --- INIT ---
     window.plugin.shardstorm = {};
-    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.62.0';
+    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.66.0';
     window.plugin.shardstorm.API_BASE = "https://app.reswue.net";
 
     window.plugin.shardstorm.layers = { zone1: null, zone2: null, zone3: null };
@@ -71,14 +71,17 @@ function wrapper(plugin_info) {
             alert_missing_config: "Please enter your API Key in Config menu.",
             alert_missing_op: "Please select an Operation in the Export menu.",
             inject_done: "Done!",
-            api_start: "Sending to ResWue...",
-            api_progress: "Progress: <span id='ss-prog-curr'>0</span> / <span id='ss-prog-total'>{total}</span> items",
-            api_done: "Success!\n{p} Portals sent.\n{z} Zones sent.",
+            api_start: "Initializing...",
+            api_done: "Success!",
             csv_name: "Name", csv_team: "Team", csv_zone: "Zone", csv_dist: "Distance(m)",
             csv_btn_list: "📄 Export CSV",
             scopes_title: "How to get your API Key",
             scopes_desc: "1. Click the button below to open ResWue settings.<br>2. Create a new token.<br>3. Check <b>EXACTLY</b> these 4 scopes:",
-            scopes_link_btn: "Open ResWue Token Page"
+            scopes_link_btn: "Open ResWue Token Page",
+            prog_sending_p: "Sending Portals... {n}/{t}",
+            prog_sending_z: "Sending Polygon...",
+            prog_waiting: "Waiting...",
+            prog_ok: "Done"
         },
         fr: {
             btn_list: "Liste", btn_export: "Export", btn_config: "Config",
@@ -112,14 +115,17 @@ function wrapper(plugin_info) {
             alert_missing_config: "Veuillez entrer votre Clé API dans le menu Config.",
             alert_missing_op: "Veuillez choisir une Opération dans le menu d'Export.",
             inject_done: "Terminé !",
-            api_start: "Envoi à ResWue...",
-            api_progress: "Progression : <span id='ss-prog-curr'>0</span> / <span id='ss-prog-total'>{total}</span> éléments",
-            api_done: "Succès !\n{p} Portails envoyés.\n{z} Zones envoyées.",
+            api_start: "Initialisation...",
+            api_done: "Succès !",
             csv_name: "Nom", csv_team: "Equipe", csv_zone: "Zone", csv_dist: "Distance(m)",
             csv_btn_list: "📄 Exporter CSV",
             scopes_title: "Comment obtenir votre Clé API",
             scopes_desc: "1. Cliquez sur le bouton ci-dessous pour ouvrir ResWue.<br>2. Créez un nouveau token.<br>3. Cochez <b>IMPERATIVEMENT</b> ces 4 cases :",
-            scopes_link_btn: "Ouvrir la page ResWue"
+            scopes_link_btn: "Ouvrir la page ResWue",
+            prog_sending_p: "Portails... {n}/{t}",
+            prog_sending_z: "Envoi Polygone...",
+            prog_waiting: "En attente...",
+            prog_ok: "Terminé"
         }
     };
 
@@ -151,6 +157,18 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.t = function(key) {
         var lang = window.plugin.shardstorm.settings.lang || 'en';
         return window.plugin.shardstorm.TRANS[lang][key] || key;
+    };
+
+    // --- UI HELPER: DIALOG ---
+    window.plugin.shardstorm.msg = function(text, title) {
+        window.dialog({
+            html: '<div style="text-align:center;">'+text+'</div>',
+            title: title || 'ShardStorm',
+            modal: true,
+            resizable: false,
+            width: 'auto',
+            dialogClass: 'ui-dialog-shardstorm'
+        });
     };
 
     // --- MATHS ---
@@ -267,11 +285,13 @@ function wrapper(plugin_info) {
 
     // --- API HELPER ---
     window.plugin.shardstorm.apiCall = async function(endpoint, method, body) {
+        window.plugin.shardstorm.loadSettings();
         var s = window.plugin.shardstorm.settings;
         var url = window.plugin.shardstorm.API_BASE + endpoint;
+        var cleanKey = s.apiKey ? s.apiKey.trim() : "";
 
         var headers = {
-            'Authorization': 'Bearer ' + s.apiKey,
+            'Authorization': 'Bearer ' + cleanKey,
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         };
@@ -294,7 +314,7 @@ function wrapper(plugin_info) {
         var t = window.plugin.shardstorm.t;
         var btn = $('#btn-load-ops');
 
-        if (!s.apiKey) { alert(t('alert_missing_config')); return; }
+        if (!s.apiKey) { window.plugin.shardstorm.msg(t('alert_missing_config')); return; }
 
         btn.text('...');
 
@@ -314,7 +334,7 @@ function wrapper(plugin_info) {
             btn.text(t('op_load'));
         } catch(e) {
             console.error(e);
-            alert("Erreur chargement OP: " + e.message);
+            window.plugin.shardstorm.msg("Erreur chargement OP: <br>" + e.message, "Erreur API");
             btn.text('Err');
         }
     };
@@ -337,74 +357,97 @@ function wrapper(plugin_info) {
         window.dialog({
             html: html,
             title: t('scopes_title'),
-            width: 350
+            width: 'auto',
+            dialogClass: 'ui-dialog-shardstorm'
         });
     };
 
-    // --- DIRECT API SEND ---
+    // --- DIRECT API SEND (SEQUENTIAL) ---
     window.plugin.shardstorm.sendToReswueAPI = async function() {
         var t = window.plugin.shardstorm.t;
         var s = window.plugin.shardstorm.settings;
         var c = window.plugin.shardstorm.consts;
 
-        // Validation Config
-        if (!s.apiKey) { alert(t('alert_missing_config')); window.plugin.shardstorm.showSettings(); return; }
-        if (!s.opSlug) { alert(t('alert_missing_op')); window.plugin.shardstorm.openExportMenu(); return; }
+        if (!s.apiKey) { window.plugin.shardstorm.msg(t('alert_missing_config')); window.plugin.shardstorm.showSettings(); return; }
+        if (!s.opSlug) { window.plugin.shardstorm.msg(t('alert_missing_op')); window.plugin.shardstorm.openExportMenu(); return; }
 
         var z1 = $('#chk-z1').prop('checked'); var z2 = $('#chk-z2').prop('checked'); var z3 = $('#chk-z3').prop('checked');
         var incPoly = $('#chk-inc-poly').prop('checked'); var incMark = $('#chk-inc-mark').prop('checked');
 
-        if (!incPoly && !incMark) { alert(t('alert_no_sel')); return; }
-        if (!z1 && !z2 && !z3) { alert(t('alert_no_sel')); return; }
+        if (!incPoly && !incMark) { window.plugin.shardstorm.msg(t('alert_no_sel')); return; }
+        if (!z1 && !z2 && !z3) { window.plugin.shardstorm.msg(t('alert_no_sel')); return; }
 
-        // --- PREPARATION ---
+        // --- PREPARATION DATA ---
         var zonesData = window.plugin.shardstorm.scanPortals();
+        var latLng = window.plugin.shardstorm.currentLatLng;
+        var toObj = function(pt) { return { "lat": pt[0], "lng": pt[1] }; };
+        var listToObjs = function(list) { return list.map(toObj); };
 
-        var totalToSend = 0;
-        var portalsToSend = [];
+        var r1 = listToObjs(window.plugin.shardstorm.getCirclePoints(latLng, c.r1));
+        var r5 = listToObjs(window.plugin.shardstorm.getCirclePoints(latLng, c.r2));
+        var r10 = listToObjs(window.plugin.shardstorm.getCirclePoints(latLng, c.r3));
 
-        if (incMark) {
-            if (z1 && zonesData.z1) portalsToSend = portalsToSend.concat(zonesData.z1);
-            if (z2 && zonesData.z2) portalsToSend = portalsToSend.concat(zonesData.z2);
-            if (z3 && zonesData.z3) portalsToSend = portalsToSend.concat(zonesData.z3);
-            totalToSend += portalsToSend.length;
+        // On construit une liste de "Jobs" par zone
+        var jobs = [];
+
+        if (z1) {
+            jobs.push({
+                id: 'z1',
+                name: t('z1') + ' ('+(zonesData.z1?zonesData.z1.length:0)+')',
+                color: s.color1,
+                portals: (incMark && zonesData.z1) ? zonesData.z1 : [],
+                polyPoints: incPoly ? r1 : null
+            });
+        }
+        if (z2) {
+            jobs.push({
+                id: 'z2',
+                name: t('z2') + ' ('+(zonesData.z2?zonesData.z2.length:0)+')',
+                color: s.color2,
+                portals: (incMark && zonesData.z2) ? zonesData.z2 : [],
+                polyPoints: incPoly ? [].concat(r5, [r5[0]], [r1[0]], r1, [r1[0]], [r5[0]]) : null
+            });
+        }
+        if (z3) {
+            jobs.push({
+                id: 'z3',
+                name: t('z3') + ' ('+(zonesData.z3?zonesData.z3.length:0)+')',
+                color: s.color3,
+                portals: (incMark && zonesData.z3) ? zonesData.z3 : [],
+                polyPoints: incPoly ? [].concat(r10, [r10[0]], [r5[0]], r5, [r5[0]], [r10[0]]) : null
+            });
         }
 
-        if (incPoly) {
-            if (z1) totalToSend++;
-            if (z2) totalToSend++;
-            if (z3) totalToSend++;
-        }
+        if (jobs.length === 0) { window.plugin.shardstorm.msg(t('alert_no_data')); return; }
 
-        if (totalToSend === 0) { alert(t('alert_no_data')); return; }
+        // --- CONSTRUCTION HTML DIALOGUE (BARRES SEPAREES) ---
+        var htmlParts = [];
+        htmlParts.push('<p style="font-weight:bold; color:#ffce00; margin-bottom:10px; text-align:center;">' + t('api_start') + '</p>');
 
-        // --- PROGRESS DIALOG (Auto-Width) ---
-        var progressHtml = `
-            <div style="text-align:center; padding:15px; min-width:300px;">
-                <p style="font-weight:bold; color:#ffce00; font-size:14px; margin-bottom:10px;">${t('api_start')}</p>
-                <div style="background:#444; height:4px; width:100%; margin-bottom:10px;">
-                    <div id="ss-prog-bar" style="background:#00ff00; height:100%; width:0%;"></div>
-                </div>
-                <p style="font-size:12px; color:#fff;">${t('api_progress').replace('{total}', totalToSend)}</p>
-            </div>`;
+        jobs.forEach(function(job) {
+             htmlParts.push(`
+            <div id="prog-${job.id}-container" style="margin-bottom:8px;">
+                 <div style="font-size:11px; margin-bottom:2px; display:flex; justify-content:space-between;">
+                    <span style="color:${job.color}; font-weight:bold;">${job.name}</span>
+                    <span id="prog-${job.id}-txt" style="font-size:10px; color:#aaa;">${t('prog_waiting')}</span>
+                 </div>
+                 <div style="background:#444; height:6px; width:100%; border-radius:3px; overflow:hidden;">
+                    <div id="prog-${job.id}-bar" style="background:${job.color}; height:100%; width:0%; transition: width 0.2s;"></div>
+                 </div>
+            </div>`);
+        });
+        htmlParts.push('<p style="margin-top:10px; text-align:center; font-size:10px; color:#aaa;">(Ne fermez pas cette fenêtre)</p>');
 
         var processingDlg = window.dialog({
-            html: progressHtml,
+            html: '<div style="min-width:300px; padding:10px;">' + htmlParts.join('') + '</div>',
             title: 'ResWue API',
             modal: true,
             resizable: false,
-            width: 'auto', // AUTO SIZE
+            width: 'auto',
+            dialogClass: 'ui-dialog-shardstorm',
             closeOnEscape: false
         });
         processingDlg.parent().find('.ui-dialog-titlebar-close').hide();
-
-        var currentProgress = 0;
-        var updateProgress = function() {
-            currentProgress++;
-            var pct = Math.round((currentProgress / totalToSend) * 100);
-            $('#ss-prog-curr').text(currentProgress);
-            $('#ss-prog-bar').css('width', pct + '%');
-        };
 
         try {
             // 2. Trouver un Layer ID
@@ -417,77 +460,76 @@ function wrapper(plugin_info) {
                 throw new Error("No layers found in this operation.");
             }
 
-            var addedPortalsCount = 0;
-            var addedPolygonsCount = 0;
+            // 3. EXECUTION SEQUENTIELLE ZONE PAR ZONE
+            for (let job of jobs) {
+                var totalSteps = job.portals.length + (job.polyPoints ? 1 : 0);
+                var currentStep = 0;
 
-            // 3. Portails (PUT)
-            if (incMark && portalsToSend.length > 0) {
-                for (let p of portalsToSend) {
-                    var pBody = {
-                        "name": p.name,
-                        "description": "ShardStorm",
-                        "coordinates": { "lat": p.lat, "lng": p.lng },
-                        "layers": [targetLayerId]
-                    };
-                    try {
-                        await window.plugin.shardstorm.apiCall(`/api/v2/operation/${s.opSlug}/portal/${p.guid}`, 'PUT', pBody);
-                        addedPortalsCount++;
-                    } catch (err) { console.error("Portal Error", err); }
-                    updateProgress();
+                var updateJobUI = function(msg) {
+                    var pct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 100;
+                    $(`#prog-${job.id}-txt`).text(msg);
+                    $(`#prog-${job.id}-bar`).css('width', pct + '%');
+                };
+
+                // A. Portails de la zone
+                if (job.portals.length > 0) {
+                    var pIdx = 0;
+                    for (let p of job.portals) {
+                        currentStep++;
+                        pIdx++;
+                        var pBody = {
+                            "name": p.name,
+                            "description": "ShardStorm",
+                            "coordinates": { "lat": p.lat, "lng": p.lng },
+                            "layers": [targetLayerId]
+                        };
+                        try {
+                            await window.plugin.shardstorm.apiCall(`/api/v2/operation/${s.opSlug}/portal/${p.guid}`, 'PUT', pBody);
+                        } catch (err) { console.error("Portal Error", err); }
+
+                        updateJobUI(t('prog_sending_p').replace('{n}', pIdx).replace('{t}', job.portals.length));
+                    }
                 }
-            }
 
-            // 4. Polygones (POST)
-            if (incPoly) {
-                var latLng = window.plugin.shardstorm.currentLatLng;
-                var toObj = function(pt) { return { "lat": pt[0], "lng": pt[1] }; };
-                var listToObjs = function(list) { return list.map(toObj); };
-
-                var r1 = listToObjs(window.plugin.shardstorm.getCirclePoints(latLng, c.r1));
-                var r5 = listToObjs(window.plugin.shardstorm.getCirclePoints(latLng, c.r2));
-                var r10 = listToObjs(window.plugin.shardstorm.getCirclePoints(latLng, c.r3));
-
-                var sendPoly = async function(name, color, points) {
+                // B. Polygone de la zone
+                if (job.polyPoints) {
+                    updateJobUI(t('prog_sending_z'));
                     var polyBody = {
-                        "name": name,
+                        "name": job.name.split(' (')[0], // Nom propre sans le compteur
                         "description": "ShardStorm Zone",
                         "layers": [targetLayerId],
                         "poly": [
                             {
                                 "type": "polygon",
-                                "latLngs": points,
-                                "color": color
+                                "latLngs": job.polyPoints,
+                                "color": job.color
                             }
                         ]
                     };
                     await window.plugin.shardstorm.apiCall(`/api/v2/operation/${s.opSlug}/polygon`, 'POST', polyBody);
-                    updateProgress();
-                };
-
-                if (z1) { await sendPoly(t('z1'), s.color1, r1); addedPolygonsCount++; }
-
-                if (z2) {
-                    var stitchedZ2 = [].concat(r5, [r5[0]], [r1[0]], r1, [r1[0]], [r5[0]]);
-                    await sendPoly(t('z2'), s.color2, stitchedZ2);
-                    addedPolygonsCount++;
+                    currentStep++;
                 }
 
-                if (z3) {
-                    var stitchedZ3 = [].concat(r10, [r10[0]], [r5[0]], r5, [r5[0]], [r10[0]]);
-                    await sendPoly(t('z3'), s.color3, stitchedZ3);
-                    addedPolygonsCount++;
-                }
+                updateJobUI(t('prog_ok'));
             }
 
             // --- SUCCES ---
             processingDlg.dialog('close');
-            alert(t('api_done').replace('{p}', addedPortalsCount).replace('{z}', addedPolygonsCount));
+
+            // Auto Refresh
+            if (window.plugin.reswue2 && window.plugin.reswue2.operations && window.plugin.reswue2.operations.current) {
+                var currentOp = window.plugin.reswue2.operations.current();
+                if (typeof currentOp.fetch === 'function') { currentOp.fetch(); }
+                else if (typeof currentOp.refresh === 'function') { currentOp.refresh(); }
+                else if (typeof currentOp.update === 'function') { currentOp.update(); }
+            }
+
+            window.plugin.shardstorm.msg(t('api_done'), "Succès");
 
         } catch (e) {
-            // --- ERREUR ---
             processingDlg.dialog('close');
             console.error(e);
-            alert("Erreur API : " + e.message);
+            window.plugin.shardstorm.msg("Erreur API : <br>" + e.message, "Erreur");
         }
     };
 
@@ -536,7 +578,7 @@ function wrapper(plugin_info) {
         if(z1 && zonesData.z1.length) { csvContent += window.plugin.shardstorm.generateCSV(zonesData.z1, t('z1')); count += zonesData.z1.length; }
         if(z2 && zonesData.z2.length) { csvContent += window.plugin.shardstorm.generateCSV(zonesData.z2, t('z2')); count += zonesData.z2.length; }
         if(z3 && zonesData.z3.length) { csvContent += window.plugin.shardstorm.generateCSV(zonesData.z3, t('z3')); count += zonesData.z3.length; }
-        if(count === 0) { alert(t('alert_no_data')); return; }
+        if(count === 0) { window.plugin.shardstorm.msg(t('alert_no_data')); return; }
 
         var dateStr = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
         var fileNamePrefix = s.fileName || 'shardstorm';
@@ -555,7 +597,7 @@ function wrapper(plugin_info) {
         if(z1) add(z.z1, t('z1'));
         if(z2) add(z.z2, t('z2'));
         if(z3) add(z.z3, t('z3'));
-        if(!exportData.length) { alert(t('alert_no_data')); return; }
+        if(!exportData.length) { window.plugin.shardstorm.msg(t('alert_no_data')); return; }
 
         var dateStr = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
         var fileNamePrefix = s.fileName || 'shardstorm';
@@ -565,10 +607,10 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.injectIntoDrawTools = function() {
         var t = window.plugin.shardstorm.t;
         var s = window.plugin.shardstorm.settings;
-        if (!window.plugin.drawTools || typeof window.plugin.drawTools.import !== 'function') { alert(t('alert_draw_missing')); return; }
+        if (!window.plugin.drawTools || typeof window.plugin.drawTools.import !== 'function') { window.plugin.shardstorm.msg(t('alert_draw_missing')); return; }
         var z1 = $('#chk-z1').prop('checked'); var z2 = $('#chk-z2').prop('checked'); var z3 = $('#chk-z3').prop('checked');
         var incPoly = $('#chk-inc-poly').prop('checked'); var incMark = $('#chk-inc-mark').prop('checked');
-        if (!incPoly && !incMark) { alert(t('alert_no_sel')); return; }
+        if (!incPoly && !incMark) { window.plugin.shardstorm.msg(t('alert_no_sel')); return; }
 
         var latLng = window.plugin.shardstorm.currentLatLng;
         var c = window.plugin.shardstorm.consts;
@@ -593,7 +635,7 @@ function wrapper(plugin_info) {
 
         window.plugin.drawTools.import(outputArray);
         window.plugin.drawTools.save();
-        alert(t('inject_done'));
+        window.plugin.shardstorm.msg(t('inject_done'), "DrawTools");
     };
 
     // --- UI UI LISTING (Simplified) ---
@@ -633,10 +675,12 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.listPortals = function() {
         var t = window.plugin.shardstorm.t;
         var s = window.plugin.shardstorm.settings;
-        if (!window.plugin.shardstorm.activeGuid) { alert(t('alert_activate')); return; }
+        if (!window.plugin.shardstorm.activeGuid) { window.plugin.shardstorm.msg(t('alert_activate')); return; }
         var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
         var statusColor = window.plugin.shardstorm.isForceLoading ? '#ffce00' : '#aaa';
         var statusText = window.plugin.shardstorm.isForceLoading ? t('status_loading') : t('status_normal');
+
+        // AUTO SIZE
         var html = `
             <div id="shardstorm-list-wrapper" style="min-width:300px;">
                 <div style="display:flex; align-items:center; margin-bottom:10px; background:#222; padding:5px; border-radius:4px; border:1px solid #444;">
@@ -660,6 +704,7 @@ function wrapper(plugin_info) {
         window.dialog({
             html: html, id: 'shardstorm-list-dialog', title: t('list_title') + ' v' + window.plugin.shardstorm.version,
             width: 'auto', // AUTO SIZE
+            dialogClass: 'ui-dialog-shardstorm',
             closeCallback: function() { if (window.plugin.shardstorm.listInterval) { clearInterval(window.plugin.shardstorm.listInterval); window.plugin.shardstorm.listInterval = null; } }
         });
         window.plugin.shardstorm.switchTab('z1');
@@ -683,7 +728,7 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.openExportMenu = function() {
         var t = window.plugin.shardstorm.t;
         var s = window.plugin.shardstorm.settings;
-        if (!window.plugin.shardstorm.activeGuid) { alert(t('alert_activate')); return; }
+        if (!window.plugin.shardstorm.activeGuid) { window.plugin.shardstorm.msg(t('alert_activate')); return; }
 
         var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
         var statusColor = window.plugin.shardstorm.isForceLoading ? '#ffce00' : '#aaa';
@@ -693,6 +738,8 @@ function wrapper(plugin_info) {
         var isRes = (window.PLAYER && window.PLAYER.team === 'RESISTANCE');
         var hasPlugin = (window.plugin.reswue || window.plugin.reswue2) ? true : false;
         var showReswue = (isRes && hasPlugin);
+
+        // OBFUSCATED ENL
         var _x = window.PLAYER ? window.PLAYER.team.substring(0, 1) : 'R';
         if (_x === String.fromCharCode(69)) {
              window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
@@ -751,6 +798,7 @@ function wrapper(plugin_info) {
         window.dialog({
             html: html, id: 'shardstorm-export-menu', title: t('exp_title') + ' v' + window.plugin.shardstorm.version,
             width: 'auto', // AUTO SIZE
+            dialogClass: 'ui-dialog-shardstorm',
             closeCallback: function() { if (window.plugin.shardstorm.monitorInterval) clearInterval(window.plugin.shardstorm.monitorInterval); },
             buttons: { 'Fermer': function() { $(this).dialog('close'); } }
         });
@@ -812,7 +860,8 @@ function wrapper(plugin_info) {
         html += '</div>';
 
         html += '<div style="margin-top:10px; border-top:1px solid #444; padding-top:10px;">'+t('set_border')+': <input type="range" min="0" max="10" step="1" id="sbw" value="'+s.borderWeight+'"></div></div>';
-        window.dialog({ html: html, title: t('set_title') + ' v' + window.plugin.shardstorm.version, width: 'auto', buttons: { 'OK': function() { $(this).dialog('close'); } } });
+
+        window.dialog({ html: html, title: t('set_title') + ' v' + window.plugin.shardstorm.version, width: 'auto', dialogClass: 'ui-dialog-shardstorm', buttons: { 'OK': function() { $(this).dialog('close'); } } });
 
         $('#shardstorm-lang-select').on('change', function() { s.lang = this.value; window.plugin.shardstorm.saveSettings(); $(this).closest('.ui-dialog-content').dialog('close'); setTimeout(function(){ window.plugin.shardstorm.showSettings(); }, 100); window.plugin.shardstorm.updateUI(); });
         $('#sc1').on('change', function() { s.color1 = this.value; window.plugin.shardstorm.saveSettings(); window.plugin.shardstorm.redrawIfActive(); });
@@ -869,6 +918,7 @@ function wrapper(plugin_info) {
         window.addLayerGroup(window.plugin.shardstorm.t('z3'), window.plugin.shardstorm.layers.zone3, true);
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
 
+        // --- OBFUSCATED ENL CONFIG ---
         var _x = window.PLAYER ? window.PLAYER.team.substring(0, 1) : 'R';
         if (_x === String.fromCharCode(69)) {
              window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
@@ -878,7 +928,10 @@ function wrapper(plugin_info) {
             #shardstorm-export-menu .shardstorm-style-btn { display: block; padding: 10px; margin: 2px 0; background: rgba(8, 48, 78, 0.9); color: #ffce00 !important; border: 1px solid #20A8B1; text-align: center; font-weight: bold; cursor: pointer; text-decoration: none !important; }
             #shardstorm-export-menu .shardstorm-style-btn:hover { background: rgba(8, 48, 78, 1); border-color: #ffce00; }
             .shardstorm-tab-content table tr:hover { background-color: rgba(255,255,255,0.1); }
+            /* Mobile Max Width Fix */
+            .ui-dialog-shardstorm { max-width: 90% !important; margin: 0 auto; }
         `).appendTo('head');
+
         console.log('[ShardStorm] Plugin loaded v' + window.plugin.shardstorm.version);
     };
 
