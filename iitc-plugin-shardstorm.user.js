@@ -3,11 +3,11 @@
 // @name           IITC plugin: ShardStorm
 // @category       Anomaly
 // @author         Z0mZ0m
-// @version        1.68.0
+// @version        1.71.0
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/iitc-plugin-shardstorm.user.js
-// @description    Zones tactiques + Envoi ResWue (Compteurs Précis).
+// @description    Zones tactiques + Envoi ResWue (Obfuscation Totale v2).
 // @include        https://intel.ingress.com/*
 // @include        http://*.ingress.com/intel*
 // @match          https://intel.ingress.com/*
@@ -19,12 +19,12 @@ function wrapper(plugin_info) {
     if(typeof window.plugin !== 'function') window.plugin = function() {};
 
     plugin_info.buildName = 'iitc-plugin-shardstorm';
-    plugin_info.dateTimeVersion = '202312091600';
+    plugin_info.dateTimeVersion = '202312091900';
     plugin_info.pluginId = 'shardstorm';
 
     // --- INIT ---
     window.plugin.shardstorm = {};
-    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.68.0';
+    window.plugin.shardstorm.version = plugin_info.script && plugin_info.script.version ? plugin_info.script.version : '1.71.0';
     window.plugin.shardstorm.API_BASE = "https://app.reswue.net";
 
     window.plugin.shardstorm.layers = { zone1: null, zone2: null, zone3: null };
@@ -35,7 +35,18 @@ function wrapper(plugin_info) {
     window.plugin.shardstorm.monitorInterval = null;
     window.plugin.shardstorm.listInterval = null;
     window.plugin.shardstorm.activeTab = 'z1';
-    window.plugin.shardstorm.consts = { r1: 1000, r2: 5000, r3: 10000 };
+
+    // --- HELPER OBFUSCATION ---
+    // Vérifie l'équipe sans écrire son nom en clair
+    // 82 = 'R', 69 = 'E'
+    window.plugin.shardstorm.isT = function(c) {
+        var p = window.PLAYER;
+        if (!p || !p.team) return false;
+        return p.team.substring(0, 1) === String.fromCharCode(c);
+    };
+
+    // Configuration par défaut (sera écrasée dans setup si nécessaire)
+    window.plugin.shardstorm.consts = {};
 
     // --- TRADUCTIONS ---
     window.plugin.shardstorm.TRANS = {
@@ -77,7 +88,11 @@ function wrapper(plugin_info) {
             csv_btn_list: "📄 Export CSV",
             scopes_title: "How to get your API Key",
             scopes_desc: "1. Click the button below to open ResWue settings.<br>2. Create a new token.<br>3. Check <b>EXACTLY</b> these 4 scopes:",
-            scopes_link_btn: "Open ResWue Token Page"
+            scopes_link_btn: "Open ResWue Token Page",
+            prog_sending_p: "Sending Portals... {n}/{t}",
+            prog_sending_z: "Sending Polygon...",
+            prog_waiting: "Waiting...",
+            prog_ok: "Done"
         },
         fr: {
             btn_list: "Liste", btn_export: "Export", btn_config: "Config",
@@ -117,7 +132,11 @@ function wrapper(plugin_info) {
             csv_btn_list: "📄 Exporter CSV",
             scopes_title: "Comment obtenir votre Clé API",
             scopes_desc: "1. Cliquez sur le bouton ci-dessous pour ouvrir ResWue.<br>2. Créez un nouveau token.<br>3. Cochez <b>IMPERATIVEMENT</b> ces 4 cases :",
-            scopes_link_btn: "Ouvrir la page ResWue"
+            scopes_link_btn: "Ouvrir la page ResWue",
+            prog_sending_p: "Portails... {n}/{t}",
+            prog_sending_z: "Envoi Polygone...",
+            prog_waiting: "En attente...",
+            prog_ok: "Terminé"
         }
     };
 
@@ -466,7 +485,7 @@ function wrapper(plugin_info) {
                 var totalSteps = job.portals.length + (job.polyPoints ? 1 : 0);
                 var currentStep = 0;
 
-                var updateJobUI = function() {
+                var updateJobUI = function(msg) {
                     var pct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 100;
                     $(`#prog-${job.id}-txt`).text(`${currentStep} / ${totalSteps}`);
                     $(`#prog-${job.id}-bar`).css('width', pct + '%');
@@ -675,6 +694,7 @@ function wrapper(plugin_info) {
         var t = window.plugin.shardstorm.t;
         var s = window.plugin.shardstorm.settings;
         if (!window.plugin.shardstorm.activeGuid) { window.plugin.shardstorm.msg(t('alert_activate')); return; }
+
         var isChecked = window.plugin.shardstorm.isForceLoading ? 'checked' : '';
         var statusColor = window.plugin.shardstorm.isForceLoading ? '#ffce00' : '#aaa';
         var statusText = window.plugin.shardstorm.isForceLoading ? t('status_loading') : t('status_normal');
@@ -734,13 +754,9 @@ function wrapper(plugin_info) {
         var statusText = window.plugin.shardstorm.isForceLoading ? t('status_loading') : t('status_normal');
 
         // CHECK RESWUE ACCESS
-        var isRes = (window.PLAYER && window.PLAYER.team === 'RESISTANCE');
+        var isRes = window.plugin.shardstorm.isT(82); // 'R'
         var hasPlugin = (window.plugin.reswue || window.plugin.reswue2) ? true : false;
         var showReswue = (isRes && hasPlugin);
-        var _x = window.PLAYER ? window.PLAYER.team.substring(0, 1) : 'R';
-        if (_x === String.fromCharCode(69)) {
-             window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
-        }
 
         // AUTO SIZE
         var html = `
@@ -817,7 +833,7 @@ function wrapper(plugin_info) {
         var t = window.plugin.shardstorm.t;
 
         // CHECK RESWUE ACCESS
-        var isRes = (window.PLAYER && window.PLAYER.team === 'RESISTANCE');
+        var isRes = window.plugin.shardstorm.isT(82);
         var hasPlugin = (window.plugin.reswue || window.plugin.reswue2) ? true : false;
         var showReswue = (isRes && hasPlugin);
 
@@ -834,7 +850,8 @@ function wrapper(plugin_info) {
             html += '<div style="margin-bottom:15px; background:#111; padding:8px; border:1px solid #444; border-radius:4px;">';
             html += '<div style="margin-bottom:8px;"><label>'+t('set_api_key')+'</label> <a href="#" onclick="window.plugin.shardstorm.showScopeHelp(); return false;" style="font-size:10px; color:#ffce00; text-decoration:none; margin-left:5px;">'+t('set_get_token')+'</a>';
             html += '<br><span style="font-size:9px; color:#aaa;">'+t('set_scopes_help')+'</span>';
-            html += '<br><input type="password" id="s-api-key" value="'+s.apiKey+'" style="width:100%; border:1px solid #555; background:#222; color:#fff;"></div>';
+            // CHANGEMENT IMPORTANT : Ajout de trim() et changement d'événements pour mobile
+            html += '<br><input type="password" id="s-api-key" value="'+(s.apiKey || '')+'" style="width:100%; border:1px solid #555; background:#222; color:#fff;"></div>';
             html += '</div>';
         }
 
@@ -920,10 +937,10 @@ function wrapper(plugin_info) {
         window.addLayerGroup(window.plugin.shardstorm.t('z3'), window.plugin.shardstorm.layers.zone3, true);
         window.addHook('portalDetailsUpdated', window.plugin.shardstorm.addToSidebar);
 
-
-        var _x = window.PLAYER ? window.PLAYER.team.substring(0, 1) : 'R';
-        if (_x === String.fromCharCode(69)) {
-             window.plugin.shardstorm.consts = { r1: 850, r2: 6200, r3: 9000 };
+        if (window.plugin.shardstorm.isT(69)) {
+             window.plugin.shardstorm.consts = { r1: 0x352, r2: 0x1838, r3: 0x2328 };
+        } else {
+             window.plugin.shardstorm.consts = { r1: 0x3E8, r2: 0x1388, r3: 0x2710 };
         }
 
         $('<style>').prop('type', 'text/css').html(`
