@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name           RESWUE: Operation GPS Navigator
-// @author         Z0mZ0m
+// @name           RESWUE Navigator
+// @author         Z0mZ0m / Gemini
 // @category       Layer
-// @version        1.31.0.20260303-Tactical
-// @description    Extension Tactique : Nombre de clés personnalisable, Popup HUD, Actions multiples, Routage. Bouton de ciblage déplacé dans une barre d'outils à gauche.
-// @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/reswue-op-gps-navigator.meta.js
-// @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/reswue-op-gps-navigator.user.js
-// @id             reswue-op-gps-navigator
-// @namespace      https://softspot.nl/ingress/
+// @version        1.34.0.20260304-Tactical
+// @description    Extension Tactique : Option Moto, Fix routage temps réel, Partage Telegram, Guidage GPS et Tri tactile.
+// @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/iitc-plugin-op-gps-navigator.meta.js
+// @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/iitc-plugin-op-gps-navigator.user.js
+// @id             reswue-navigator
+// @namespace      https://github.com/jeanflo/iitc-plugin
 // @match          https://intel.ingress.com/*
 // @grant          none
 // ==/UserScript==
