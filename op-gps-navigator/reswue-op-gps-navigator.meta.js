@@ -2,7 +2,7 @@
 // @name           RESWUE Navigator
 // @author         Z0mZ0m / Gemini
 // @category       Layer
-// @version        1.39.0.20260307-Tactical
+// @version        1.38.0.20260307-Tactical
 // @description    Extension Tactique : Fix Forçage Voix Android, HUD mobile, Telegram Auto, Tri tactile.
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/iitc-plugin-op-gps-navigator.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/iitc-plugin-op-gps-navigator.user.js
