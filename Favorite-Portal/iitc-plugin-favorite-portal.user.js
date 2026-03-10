@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name           IITC plugin: Favorite portal details (Toolbar Integration)
-// @author         DanielOnDiordna / Z0mZ0m
+// @author         DanielOnDiordna / Gemini
 // @category       Info
-// @version        1.2.27.20260303-Update
+// @version        1.2.28.20260310-Update
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/Favorite-Portal/iitc-plugin-favorite-portal.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/Favorite-Portal/iitc-plugin-favorite-portal.user.js
-// @description    [1.2.27] Bouton d'ajout aux favoris déplacé dans une barre d'outils Leaflet à gauche pour plus d'ergonomie.
+// @description    [1.2.28] L'icône d'alerte (⚠️) est désormais cliquable et ouvre le portail directement dans Ingress Prime.
 // @id             iitc-plugin-favorite-portal-details
 // @namespace      https://softspot.nl/ingress/
 // @match          https://intel.ingress.com/*
@@ -19,10 +19,12 @@ function wrapper(plugin_info) {
     var self = window.plugin.favoriteportaldetails;
     self.id = 'favoriteportaldetails';
     self.title = 'Favorite portal details';
-    self.version = '1.2.27.20260303-Update';
+    self.version = '1.2.28.20260310-Update';
     self.author = 'DanielOnDiordna';
     self.changelog = `
 Changelog:
+version 1.2.28.20260310-Update
+- NOUVEAUTÉ : Le triangle d'alerte jaune (⚠️) sur la carte est maintenant cliquable et ouvre le portail directement dans l'application Ingress Prime via un deeplink.
 version 1.2.27.20260303-Update
 - NOUVEAUTÉ : Le bouton d'ajout/retrait des favoris a été déplacé dans une barre d'outils native Leaflet sur la gauche de l'écran.
 version 1.2.26.20260302-Update
@@ -419,7 +421,21 @@ version 1.2.26.20260302-Update
                 if (fav.lat && fav.lng && fav.lat !== 0 && fav.lng !== 0) {
                     let latlng = L.latLng(fav.lat, fav.lng);
                     if (bounds.contains(latlng)) {
-                        let marker = L.marker(latlng, { icon: alertIcon, interactive: false, keyboard: false });
+                        let marker = L.marker(latlng, { icon: alertIcon, interactive: true, keyboard: false });
+                        
+                        // Ajout du clic pour ouvrir Ingress Prime via Deeplink
+                        marker.on('click', function(e) {
+                            if (e.originalEvent) {
+                                e.originalEvent.stopPropagation();
+                                e.originalEvent.preventDefault();
+                            }
+                            // Construction du deeplink officiel Ingress Prime
+                            let primeDeeplink = `https://link.ingress.com/?link=https://intel.ingress.com/portal/${guid}&apn=com.nianticproject.ingress&isi=576505181&ibi=com.google.ingress&ofl=https://intel.ingress.com/intel?pll=${fav.lat},${fav.lng}`;
+                            
+                            // Ouverture du lien (compatible IITC Mobile et navigateur)
+                            window.open(primeDeeplink, '_system') || window.open(primeDeeplink, '_blank');
+                        });
+                        
                         self.alertLayerGroup.addLayer(marker);
                     } else {
                         neededIndicators[guid] = true;
@@ -744,7 +760,7 @@ version 1.2.26.20260302-Update
             @keyframes ${self.id}Bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
             .${self.id}Blink { animation: ${self.id}SimpleBlink 1.5s infinite; }
             .${self.id}TargetPulse { width: 40px; height: 40px; border: 3px solid red; border-radius: 50%; position: absolute; top: -20px; left: -20px; box-shadow: 0 0 10px red, inset 0 0 10px red; animation: ${self.id}TargetPulsate 1.5s ease-out infinite; pointer-events: none; }
-            .${self.id}TargetIcon { font-size: 24px; line-height: 24px; position: absolute; top: -30px; left: -12px; text-shadow: 0 0 5px black, 0 0 5px black; animation: ${self.id}Bounce 1.5s infinite; pointer-events: none; }
+            .${self.id}TargetIcon { font-size: 24px; line-height: 24px; position: absolute; top: -30px; left: -12px; text-shadow: 0 0 5px black, 0 0 5px black; animation: ${self.id}Bounce 1.5s infinite; pointer-events: auto; cursor: pointer; }
             .${self.id}EdgeRadar { position: absolute; font-size: 30px; color: red; text-shadow: 0px 0px 5px #000, 0px 0px 10px rgba(255,0,0,0.8); z-index: 5000; cursor: pointer; animation: ${self.id}PulseFade 1.5s infinite; pointer-events: auto; }
             tr.${self.id}teamE { background-color: rgba(3, 220, 3, 0.2) !important; }
             tr.${self.id}teamR { background-color: rgba(0, 136, 255, 0.2) !important; }
@@ -791,3 +807,4 @@ var info = {};
 if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
 script.appendChild(document.createTextNode('('+ wrapper +')('+JSON.stringify(info)+');'));
 (document.body || document.head || document.documentElement).appendChild(script);
+
