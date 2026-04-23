@@ -2,10 +2,8 @@
 // @author         Z0mz0m
 // @name           IITC plugin: Layer count & Persistent Global Highlighter
 // @category       Info
-// @version        1.3
-// @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/field%20count/iitc-plugin-field-count.meta.js
-// @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/field%20count/iitc-plugin-field-count.user.js
-// @description    Surligne les fields de façon persistante au clic et sur l'écran
+// @version        1.4.1
+// @description    Surligne les fields de façon persistante au clic et sur l'écran avec filtrage par faction
 // @id             iitc-plugin-layer-count-custom
 // @match          https://intel.ingress.com/*
 // @match          https://intel-x.ingress.com/*
