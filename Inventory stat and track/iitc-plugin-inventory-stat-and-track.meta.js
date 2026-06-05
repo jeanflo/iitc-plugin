@@ -2,8 +2,8 @@
 // @author        Z0mz0m
 // @name          IITC plugin: Inventory stats and track
 // @category      Info
-// @version       0.8.4.20260601
-// @description   View inventory with custom targets. Responsive dashboard grid tailored with exact Ingress Prime rarity colors. Faction lock protection and fully customizable targets with high-quality ameba64 colored item icons inside cell levels.
+// @version       0.9.6.20260605
+// @description   View inventory with custom targets. Responsive dashboard grid tailored with exact Ingress Prime rarity colors. Faction lock protection, robust CSV export, and standardized items.
 // @id            iitc-plugin-inventory-stat-and-track
 // @namespace     https://github.com/IITC-CE/ingress-intel-total-conversion
 // @updateURL     https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/Inventory%20stat%20and%20track/iitc-plugin-inventory-stat-and-track.meta.js
