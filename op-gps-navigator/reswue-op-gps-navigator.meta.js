@@ -2,8 +2,8 @@
 // @name           RESWUE OP GPS Navigator
 // @author         Z0mZ0m
 // @category       Layer
-// @version        1.43.2
-// @description    Extension Tactique : Fix Forçage Voix Android, HUD mobile, TTS Clean, Safe Areas & Autonomie Mathématique
+// @version        1.43.4
+// @description    Extension Tactique : Fix Forçage Voix Android, HUD mobile, TTS Clean (Protection des chiffres), Safe Areas & Autonomie Mathématique
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/reswue-op-gps-navigator.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/op-gps-navigator/reswue-op-gps-navigator.user.js
 // @id             reswue-op-gps-navigator
