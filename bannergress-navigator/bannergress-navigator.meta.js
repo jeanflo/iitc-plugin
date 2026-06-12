@@ -2,7 +2,7 @@
 // @name           IITC plugin: Bannergress Navigator
 // @author         Z0mZ0m
 // @category       Layer
-// @version        1.1.0
+// @version        1.1.1
 // @description    Navigation piétonne automatisée pour les fresques Bannergress avec auto-validation et Deep Links Ingress Prime.
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/bannergress-navigator/bannergress-navigator.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/bannergress-navigator/bannergress-navigator.user.js
