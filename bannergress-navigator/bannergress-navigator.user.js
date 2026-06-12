@@ -6,7 +6,7 @@
 // @description    Navigation piétonne automatisée pour les fresques Bannergress avec auto-validation et Deep Links Ingress Prime.
 // @updateURL      https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/bannergress-navigator/bannergress-navigator.meta.js
 // @downloadURL    https://raw.githubusercontent.com/jeanflo/iitc-plugin/refs/heads/main/bannergress-navigator/bannergress-navigator.user.js
-// @id             bannergress-ios-navigator
+// @id             bannergress-navigator
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @match          https://intel.ingress.com/*
 // @grant          none
@@ -593,7 +593,7 @@
 		let html =
 			$(`<div id="${self.id}menu_content" style="display:flex; flex-direction:column; height:100%;">
             <div style="background:rgba(255,204,0,0.15); padding:10px; border-bottom:1px solid var(--bannernav-theme); display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:bold; color:var(--bannernav-theme);">Bannergress iOS Nav</span>
+                <span style="font-weight:bold; color:var(--bannernav-theme);">Bannergress Nav</span>
                 <button onclick="window.plugin.bannernavigator.searchNearbyBanners()" style="background:#004; color:#0af; border:1px solid #0af; padding:5px 10px; cursor:pointer; font-size:12px; border-radius:3px;">🔍 Scanner Zone</button>
             </div>
 
