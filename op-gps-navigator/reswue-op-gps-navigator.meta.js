@@ -10,4 +10,5 @@
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @match          https://intel.ingress.com/*
 // @grant          none
+// @icon64         data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmM2IzMCIgZD0iTTE0LjQgNkwxNCA0SDV2MTdoMnYtN2g1LjZsLjQgMmg3VjZ6Ii8+PC9zdmc+
 // ==/UserScript==
