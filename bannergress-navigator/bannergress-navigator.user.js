@@ -10,7 +10,7 @@
 // @namespace      https://github.com/jeanflo/iitc-plugin
 // @match          https://intel.ingress.com/*
 // @grant          none
-// @icon64         data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmM2IzMCIgZD0iTTE0LjQgNkwxNCA0SDV2MTdoMnYtN2g1LjZsLjQgMmg3VjZ6Ii8+PC9zdmc+
+// @icon64         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABjUlEQVR4AeyXUWrDMAyGf4cepEfI49gG203WHGUnWW+yDLaxxxyhBxl4KWRQ+pJYklPZ+QUihEi29Om3Sxts3Ahg4wIAFUAFbJwAj8DGBcBLkEdAcgTiY/sc79tDNr9r95K6JDkyBUS8IOAtm+9wwEomA5C7uIin3Fv8r+8TAOD8CCC77eNK94BXBQA7ZFEBrqy5evfzGvEeH9oo8vEXamkjfgEs7UAZRwBKgMWnUwHFj1DZABWgBFh8OhVQ/AiVDVABSoDFp1MBxY9Q2QAVoAToPn2uQCpgjlDt36mA2ic81x8VMEco4XuPiE7kAa8J+5iGWirgFL6Ho8TxiyNuZJYAxC2En+EkTlYmugAw9dBPz1UffgAEfKza+bSZHwDAWQHnu0DvDRYfKTcAwufQh6+hM/FxLSw0NwAW1mseRgDmSAtbsDoFpPIngFRitcVTAbVNNLUfKiCVWG3xVEBtE03tR6SA6Q9LGJ+X3qVu7iFeBMBD4VY1EIAVyVLXoQJKnZxV3VSAFclbraPd9w8AAP//qhdzCgAAAAZJREFUAwBkEN6BmwTzbQAAAABJRU5ErkJggg==
 // ==/UserScript==
 (function (_window) {
 	"use strict";
