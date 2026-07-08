@@ -10,8 +10,8 @@
 // @match        https://missions.ingress.com/
 // @match        https://missions.ingress.com/edit*
 // @grant        none
-// @downloadURL	 https://github.com/andyjennings314/IMATTC/raw/master/IMATTC.user.js
-// @updateURL	 https://github.com/andyjennings314/IMATTC/raw/master/IMATTC.user.js
+// @downloadURL	 https://github.com/jeanflo/iitc-plugin/blob/main/IMATTC2.user.js
+// @updateURL	 https://github.com/jeanflo/iitc-plugin/blob/main/IMATTC2.meta.js
 // ==/UserScript==
 
 function imattcMain() {
